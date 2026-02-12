@@ -4,31 +4,60 @@
     <meta charset="UTF-8">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Giftup Multiplayer Pro V3</title>
+    <title>Giftup Real Multiplayer V4</title>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root { --blue: #007aff; --green: #34c759; --red: #ff3b30; }
-        body { background: #000; color: #fff; font-family: -apple-system, sans-serif; margin: 0; padding: 0; overflow: hidden; height: 100vh; }
         
+        body { 
+            background: #000; 
+            color: #fff; 
+            font-family: -apple-system, sans-serif; 
+            margin: 0; padding: 0; overflow: hidden; height: 100vh; 
+        }
+
         .header { padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1a1a1a; height: 50px; box-sizing: border-box; }
         .balance { background: var(--green); color: #000; padding: 4px 12px; border-radius: 20px; font-weight: 800; font-size: 14px; }
-        #online-tag { font-size: 11px; color: var(--blue); font-weight: bold; margin-right: 10px; }
+        #online-tag { font-size: 11px; color: var(--blue); font-weight: bold; }
 
         .screen { display: none; height: calc(100vh - 50px); flex-direction: column; }
         .active { display: flex; }
 
-        .history { padding: 8px 10px; display: flex; gap: 8px; overflow-x: auto; border-bottom: 1px solid #1a1a1a; scrollbar-width: none; }
+        .history { padding: 8px 10px; display: flex; gap: 8px; overflow-x: auto; border-bottom: 1px solid #1a1a1a; scrollbar-width: none; background: #000; }
         .hs-item { background: #111; padding: 5px 12px; border-radius: 6px; font-size: 12px; border: 1px solid #222; min-width: 45px; text-align: center; color: #888; }
 
-        .viewport { flex-grow: 1; display: flex; align-items: center; justify-content: center; background: #000; position: relative; }
-        #rocket-vid { width: 240px; mix-blend-mode: screen; transform: scale(0); transition: 0.3s ease; }
+        /* ІГРОВА ЗОНА З ФОНОМ */
+        .viewport { 
+            flex-grow: 1; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            position: relative; 
+            overflow: hidden; /* Обрізаємо фон по краях */
+            background: #000;
+        }
+
+        #bg-video {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            object-fit: cover;
+            z-index: 1; /* Під ракеткою */
+        }
+
+        #rocket-vid { 
+            width: 280px; 
+            mix-blend-mode: screen; 
+            transform: scale(0); 
+            transition: 0.3s ease; 
+            z-index: 2; /* Над фоном */
+        }
 
         .controls { padding: 15px; border-top: 1px solid #1a1a1a; background: #000; }
         input { width: 100%; background: #111; border: 1px solid #222; padding: 12px; color: #fff; border-radius: 10px; text-align: center; margin-bottom: 10px; box-sizing: border-box; font-size: 16px; outline: none; }
         .btn-main { width: 100%; padding: 18px; border-radius: 12px; border: none; font-size: 16px; font-weight: bold; color: #fff; cursor: pointer; text-transform: uppercase; }
 
-        /* ОНОВЛЕНИЙ БЛОК СТАВОК З ГОРТАННЯМ */
         .bets-scroll { 
             height: 140px; 
             overflow-y: scroll; 
@@ -37,9 +66,6 @@
             border-top: 1px solid #1a1a1a; 
             background: #050505; 
         }
-        .bets-scroll::-webkit-scrollbar { width: 4px; }
-        .bets-scroll::-webkit-scrollbar-thumb { background: #222; border-radius: 10px; }
-
         .bet-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 14px; padding-bottom: 5px; border-bottom: 1px solid #111; }
         .u-box { display: flex; align-items: center; gap: 10px; }
         .u-avatar { width: 28px; height: 28px; border-radius: 50%; background: #222; }
@@ -48,8 +74,8 @@
 <body>
 
     <div class="header">
-        <div style="display: flex; align-items: center;">
-            <div style="font-weight: 900; letter-spacing: 1px; margin-right: 10px;">GIFTUP</div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="font-weight: 900; letter-spacing: 1px;">GIFTUP</div>
             <div id="online-tag">Online: 0</div>
         </div>
         <div class="balance"><span id="user-bal">500.00</span> ₴</div>
@@ -66,7 +92,7 @@
             </div>
             <div onclick="startGame()" style="background:#141416; margin-top:20px; padding:40px 20px; border-radius:16px; text-align:center; border:1px solid #222; cursor:pointer;">
                 <div style="font-size:50px; margin-bottom:10px;">🚀</div>
-                <h3 style="margin:0; letter-spacing:1px;">МУЛЬТИПЛЕЄР</h3>
+                <h3 style="margin:0;">ГРАТИ З РЕАЛЬНИМИ ГРАВЦЯМИ</h3>
             </div>
         </div>
     </div>
@@ -76,8 +102,12 @@
             <div id="live-multiplier" class="hs-item" style="color:var(--blue); border-color:var(--blue); font-weight:bold;">0.0s</div>
         </div>
         <div class="viewport">
+            <video autoplay muted loop playsinline id="bg-video">
+                <source src="https://files.catbox.moe/d91l6n.mp4" type="video/mp4">
+            </video>
+            
             <video id="rocket-vid" playsinline muted loop>
-                <source src="https://files.catbox.moe/d13y9l.mp4" type="video/mp4">
+                <source src="https://files.catbox.moe/gkhz5v.mp4" type="video/mp4">
             </video>
         </div>
         <div class="controls">
@@ -111,12 +141,10 @@
             localStorage.setItem('g_bal', myBalance);
         }
 
-        // ОНОВЛЕННЯ ОНЛАЙНУ
         socket.on('update_online', (count) => {
             document.getElementById('online-tag').innerText = "Online: " + count;
         });
 
-        // ОНОВЛЕННЯ СТАВОК (РЕАЛЬНИЙ ЧАС)
         socket.on('update_bets', (allBets) => {
             const container = document.getElementById('bets-container');
             container.innerHTML = "";
@@ -176,9 +204,11 @@
             const vid = document.getElementById('rocket-vid');
             const multiplierDisp = document.getElementById('live-multiplier');
 
+            // МИТТЄВЕ ОЧИЩЕННЯ ПРИ ЗМІНІ РАУНДУ
             if (rid !== currentRoundId) {
                 currentRoundId = rid;
                 if (!isCashedOut) activeBet = 0;
+                socket.emit('reset_all_bets'); // Команда на сервер очистити ставки
             }
 
             const crashAt = 1.1 + ((rid * 157) % 40) / 10;
@@ -200,15 +230,9 @@
             } else {
                 multiplierDisp.innerText = crashAt.toFixed(2) + "x"; multiplierDisp.style.color = "var(--red)";
                 vid.style.transform = "scale(0)";
-                
                 if (activeBet > 0 && !isCashedOut) {
                     btn.innerText = "BOOM!"; btn.style.background = "var(--red)"; btn.style.color="#fff";
                     activeBet = 0;
-                }
-
-                // ОЧИЩЕННЯ СТАВОК ПІСЛЯ ВИБУХУ (через 2 секунди)
-                if (ms >= 6000 + timeToCrash + 2000 && ms < 19500) {
-                    socket.emit('reset_all_bets');
                 }
             }
         }
