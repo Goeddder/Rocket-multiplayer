@@ -3,17 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rocket Ultra Final</title>
+    <title>Rocket Ultra Pro</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --blue: #007aff; --green: #34c759; --red: #ff3b30; --gray: #2c2c2e; }
+        :root { --blue: #007aff; --green: #34c759; --red: #ff3b30; --gray: #2c2c2e; --dark-btn: #1c1c1e; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
         body { background: #000; color: #fff; font-family: -apple-system, sans-serif; margin: 0; padding: 0; overflow: hidden; height: 100vh; }
 
-        /* ФОНОВЕ ВІДЕО */
         .bg-video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.35; z-index: 0; pointer-events: none; }
 
-        /* Анімація вибуху */
         @keyframes shake {
             0% { transform: translate(2px, 2px); }
             25% { transform: translate(-2px, -2px); }
@@ -22,44 +20,34 @@
         }
         .boom-shake { animation: shake 0.3s infinite; }
 
-        /* Екрани */
         .screen { display: none; height: calc(100vh - 65px); width: 100%; position: relative; background: #000; overflow: hidden; }
         .screen.active { display: flex; flex-direction: column; }
         
         #game-screen { height: 100vh; position: fixed; top: 0; left: 0; z-index: 200; display: none; background: #000; flex-direction: column; }
         #game-screen.active { display: flex; }
 
-        /* UI Елементи */
         .game-header { position: absolute; top: 12px; right: 12px; display: flex; flex-direction: column; align-items: flex-end; gap: 5px; z-index: 300; }
         .btn-exit { background: rgba(255,255,255,0.1); border: 1px solid #333; color: #fff; padding: 6px 14px; border-radius: 12px; font-size: 11px; font-weight: bold; }
         .game-balance-top { background: rgba(0,0,0,0.8); padding: 4px 10px; border-radius: 8px; border: 1px solid var(--green); color: var(--green); font-size: 13px; font-weight: 800; }
 
-        /* ТАБА ІКСІВ (ЗВЕРХУ) + СІРА ЛІНІЯ */
         .history-bar { 
-            display: flex; 
-            gap: 8px; 
-            padding: 10px 15px; 
-            background: rgba(15, 15, 15, 0.8); 
-            overflow-x: auto; 
-            border-bottom: 2px solid var(--gray); /* Та сама сіра лінія */
-            min-height: 55px; 
-            align-items: center; 
-            z-index: 10; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            display: flex; gap: 8px; padding: 10px 15px; background: rgba(15, 15, 15, 0.8); 
+            overflow-x: auto; border-bottom: 2px solid var(--gray); min-height: 55px; align-items: center; z-index: 10; 
         }
         .hs-item { padding: 5px 12px; border-radius: 8px; font-size: 12px; font-weight: bold; background: #1c1c1e; color: #888; border: 1px solid #3a3a3c; white-space: nowrap; }
         .hs-item.live { color: var(--blue); border-color: var(--blue); min-width: 75px; text-align: center; background: rgba(0,122,255,0.1); border: 1.5px solid var(--blue); }
 
-        /* Центр гри */
         .viewport { flex-grow: 1; display: flex; align-items: center; justify-content: center; position: relative; }
         #rocket-vid { width: 220px; mix-blend-mode: screen; transform: scale(0); transition: 0.3s; z-index: 2; }
         #boom-text { position: absolute; font-size: 55px; font-weight: 900; color: var(--red); display: none; z-index: 10; text-shadow: 0 0 20px black; }
 
-        /* Список ставок */
-        .bets-list { height: 180px; background: #000; padding: 5px 15px; overflow-y: auto; border-top: 1px solid #111; z-index: 10; }
-        .bet-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #111; }
+        /* СПИСОК СТАВОК ТА СТИЛЬ КНОПКИ */
+        .bets-list { height: 180px; background: #000; padding: 10px 15px; overflow-y: auto; border-top: 1px solid #111; z-index: 10; }
+        .bet-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; margin-bottom: 6px; border-radius: 10px; background: rgba(255,255,255,0.03); border: 1px solid transparent; }
+        
+        /* СТИЛЬ СІРОЇ КНОПКИ ДЛЯ ТВОЄЇ СТАВКИ */
+        .bet-row.my-bet { background: var(--dark-btn); border: 1px solid #3a3a3c; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
 
-        /* Навігація */
         .nav-bar { position: fixed; bottom: 0; width: 100%; height: 65px; background: #0a0a0a; border-top: 1px solid #111; display: flex; justify-content: space-around; align-items: center; z-index: 100; }
         .nav-item { color: #555; font-size: 11px; display: flex; flex-direction: column; align-items: center; gap: 4px; width: 50%; cursor: pointer; }
         .nav-item.active { color: var(--blue); }
@@ -97,23 +85,18 @@
 
     <div id="game-screen" class="screen">
         <video autoplay muted loop playsinline class="bg-video"><source src="https://files.catbox.moe/d91l6n.mp4"></video>
-        
         <div class="game-header">
             <button class="btn-exit" onclick="closeGame()">ВИЙТИ</button>
             <div class="game-balance-top"><span class="u-bal">500</span> ₴</div>
         </div>
-
         <div class="history-bar" id="history-container">
             <div class="hs-item live" id="live-x">0.0s</div>
         </div>
-        
         <div class="viewport" id="viewport">
             <div id="boom-text">BOOM</div>
             <video id="rocket-vid" playsinline muted loop><source src="https://files.catbox.moe/gkhz5v.mp4"></video>
         </div>
-
         <div class="bets-list" id="bets-list"></div>
-
         <div class="controls-zone" style="padding: 15px 20px; background: #000; border-top: 1px solid #111; z-index: 20;">
             <input type="number" id="bet-input" style="width:100%; background:#111; border:1px solid #222; padding:12px; color:#fff; border-radius:10px; text-align:center; margin-bottom:10px; font-size:18px; font-weight:bold;" value="100">
             <button id="main-btn" style="width:100%; padding:18px; border-radius:12px; border:none; font-size:16px; font-weight:800; color:#fff; background:linear-gradient(90deg, #007aff, #00c6ff);" onclick="handleBet()">СТАВКА</button>
@@ -126,11 +109,10 @@
     </div>
 
     <script>
-        // ... (весь JavaScript залишається без змін, як ми і домовлялися)
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        const user = tg.initDataUnsafe?.user || { first_name: "Гравець", id: "0000" };
+        const user = tg.initDataUnsafe?.user || { first_name: "Гравець", id: "0" };
         const uName = user.username ? "@"+user.username : user.first_name;
         const uAvatar = user.photo_url || `https://ui-avatars.com/api/?name=${uName}&background=007aff&color=fff`;
         
@@ -160,18 +142,20 @@
             const container = document.getElementById('bets-list');
             let row = document.getElementById('bet-' + name);
             if (!row) {
-                row = document.createElement('div'); row.id = 'bet-' + name; row.className = 'bet-row';
+                row = document.createElement('div'); 
+                row.id = 'bet-' + name; 
+                row.className = 'bet-row' + (name === "Ви" ? " my-bet" : "");
                 container.prepend(row);
             }
             const isWin = status === 'win';
             row.innerHTML = `
                 <div style="display:flex;align-items:center;gap:8px;">
                     <img src="${avatar}" style="width:24px;height:24px;border-radius:50%;">
-                    <span style="font-size:13px;font-weight:500;">${name}</span>
+                    <span style="font-size:13px;font-weight:600;">${name}</span>
                 </div>
                 <div style="display:flex;gap:12px;align-items:center;">
-                    ${isWin ? `<span style="color:var(--green);font-size:12px;font-weight:900;">${x}x</span>` : ''}
-                    <span style="color:${isWin ? 'var(--green)' : 'var(--blue)'};font-weight:800;">${isWin ? '+'+win : amount} ₴</span>
+                    <span id="bet-x-${name}" style="color:${isWin ? 'var(--green)' : 'var(--blue)'};font-size:12px;font-weight:900;">${x > 0 ? x+'x' : ''}</span>
+                    <span id="bet-win-${name}" style="color:${isWin ? 'var(--green)' : '#fff'};font-weight:800;">${isWin ? '+'+win : amount} ₴</span>
                 </div>`;
         }
 
@@ -211,15 +195,22 @@
                     gamePhase = "fly"; phaseStartTime = now;
                     vid.style.transform = "scale(1.1)"; vid.play();
                     document.getElementById('main-btn').style.opacity = "1";
-                    const r = Math.random();
-                    if(r < 0.05) lastCrash = 1.00;
-                    else if(historyX[0] && parseFloat(historyX[0]) < 1.4) lastCrash = (Math.random() * 3.5 + 1.8);
-                    else lastCrash = (Math.random() * 1.35 + 1.01);
+                    lastCrash = (Math.random() < 0.05) ? 1.00 : (Math.random() * 3 + 1.01);
                 }
             } 
             else if (gamePhase === "fly") {
                 const x = (1 + (elapsed / 1000) * 0.15).toFixed(2);
                 liveXEl.innerText = x + "x";
+
+                // ОНОВЛЕННЯ СТАВКИ В ТАБІ В РЕАЛЬНОМУ ЧАСІ
+                if (activeBet > 0 && !isCashed) {
+                    const winLabel = document.getElementById('bet-win-Ви');
+                    const xLabel = document.getElementById('bet-x-Ви');
+                    if (winLabel) winLabel.innerText = (activeBet * x).toFixed(0) + " ₴";
+                    if (xLabel) xLabel.innerText = x + "x";
+                    document.getElementById('main-btn').innerText = "ЗАБРАТИ " + (activeBet * x).toFixed(0);
+                }
+
                 if (parseFloat(x) >= lastCrash) {
                     gamePhase = "boom"; phaseStartTime = now;
                     boomT.style.display = "block";
