@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rocket Ultra Classic Style</title>
+    <title>Rocket Ultra Multiplayer</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
@@ -30,7 +30,6 @@
         .btn-exit { background: rgba(255,255,255,0.1); border: 1px solid #333; color: #fff; padding: 6px 14px; border-radius: 12px; font-size: 11px; font-weight: bold; }
         .game-balance-top { background: rgba(0,0,0,0.8); padding: 4px 10px; border-radius: 8px; border: 1px solid var(--green); color: var(--green); font-size: 13px; font-weight: 800; }
 
-        /* ІКС ТАБ (У ВЕРХНІЙ ПАНЕЛІ) */
         .history-bar { display: flex; gap: 8px; padding: 60px 15px 10px; background: transparent; overflow-x: auto; min-height: 55px; z-index: 10; align-items: center; }
         .hs-item { padding: 5px 12px; border-radius: 8px; font-size: 12px; font-weight: bold; background: #1c1c1e; color: #888; border: 1px solid #3a3a3c; white-space: nowrap; }
         .hs-item.live { color: var(--blue); border-color: var(--blue); min-width: 75px; text-align: center; background: rgba(0,122,255,0.1); border: 1.5px solid var(--blue); font-size: 14px; }
@@ -85,7 +84,7 @@
         <div class="game-header">
             <div class="online-box">
                 <div class="online-dot"></div>
-                ONLINE: <span id="online-val">42</span>
+                ONLINE: <span id="online-val">1</span>
             </div>
             <div class="game-right">
                 <button class="btn-exit" onclick="closeGame()">ВИЙТИ</button>
@@ -94,7 +93,7 @@
         </div>
 
         <div class="history-bar" id="history-container">
-            <div class="hs-item live" id="live-x">0.0s</div>
+            <div class="hs-item live" id="live-x">З'єднання...</div>
         </div>
 
         <div class="viewport">
@@ -126,9 +125,10 @@
         document.getElementById('name-big').innerText = uName;
 
         let balance = parseFloat(localStorage.getItem('rocket_bal')) || 500.00;
-        let activeBet = 0, isCashed = false, gamePhase = "wait", phaseStartTime = Date.now();
-        let curX = 1.0, crashX = 2.0;
-        let historyX = [];
+        let activeBet = 0, isCashed = false, gamePhase = "wait", curX = 1.0;
+
+        // ПІДКЛЮЧЕННЯ ДО РЕАЛЬНОГО СЕРВЕРА
+        const socket = io("https://rocket-multiplayer.onrender.com");
 
         function updateUI() {
             document.querySelectorAll('.u-bal').forEach(el => el.innerText = balance.toFixed(2));
@@ -166,12 +166,63 @@
                 </div>`;
         }
 
+        // СЛУХАЄМО СЕРВЕР
+        socket.on("gameUpdate", (data) => {
+            document.getElementById('online-val').innerText = data.online;
+            gamePhase = data.phase;
+            const liveXEl = document.getElementById('live-x');
+            const vid = document.getElementById('rocket-vid');
+
+            if (gamePhase === "wait") {
+                liveXEl.innerText = data.timer + "s";
+                liveXEl.style.color = "var(--blue)";
+                vid.style.transform = "scale(0)";
+                // Очищуємо ставки, якщо раунд тільки почався
+                if (parseFloat(data.timer) > 5.5) document.getElementById('bets-list').innerHTML = '';
+            } 
+            else if (gamePhase === "fly") {
+                curX = data.currentX;
+                liveXEl.innerText = curX.toFixed(2) + "x";
+                vid.style.transform = "scale(1.1)"; 
+                vid.play();
+
+                if (activeBet > 0 && !isCashed) {
+                    document.getElementById('bw-'+uName).innerText = (activeBet * curX).toFixed(0) + " ₴";
+                    document.getElementById('bx-'+uName).innerText = curX.toFixed(2) + "x";
+                    document.getElementById('main-btn').innerText = "ЗАБРАТИ " + (activeBet * curX).toFixed(0);
+                    document.getElementById('main-btn').style.opacity = "1";
+                }
+            } 
+            else if (gamePhase === "boom") {
+                liveXEl.innerText = "BOOM!";
+                liveXEl.style.color = "var(--red)";
+                vid.style.transform = "scale(0)";
+                
+                // Скидаємо кнопки
+                const btn = document.getElementById('main-btn');
+                btn.style.background = "linear-gradient(90deg, #007aff, #00c6ff)";
+                btn.innerText = "СТАВКА";
+                btn.style.opacity = "1";
+                activeBet = 0;
+            }
+        });
+
+        // Слухаємо ставки інших гравців
+        socket.on("newBet", (b) => {
+            if (b.name !== uName) upsertBet(b.name, b.avatar, b.amount);
+        });
+
         function handleBet() {
             const btn = document.getElementById('main-btn');
             if(gamePhase === "wait" && activeBet === 0) {
                 const amt = parseFloat(document.getElementById('bet-input').value);
                 if(amt > balance || amt <= 0) return;
+                
                 balance -= amt; activeBet = amt; isCashed = false; updateUI();
+                
+                // ВІДПРАВЛЯЄМО НА СЕРВЕР
+                socket.emit("placeBet", { name: uName, avatar: uAvatar, amount: amt });
+                
                 upsertBet(uName, uAvatar, amt);
                 btn.innerText = "ПРИЙНЯТО"; btn.style.opacity = "0.5";
             } else if (gamePhase === "fly" && activeBet > 0 && !isCashed) {
@@ -183,63 +234,7 @@
             }
         }
 
-        function gameLoop() {
-            const now = Date.now();
-            const elapsed = now - phaseStartTime;
-            const liveXEl = document.getElementById('live-x');
-            const vid = document.getElementById('rocket-vid');
-
-            if (gamePhase === "wait") {
-                let timer = ((6000 - elapsed) / 1000).toFixed(1);
-                liveXEl.innerText = timer + "s";
-                liveXEl.style.color = "var(--blue)";
-                vid.style.transform = "scale(0)";
-                document.getElementById('online-val').innerText = Math.floor(Math.random()*5 + 40);
-                if (timer <= 0) {
-                    gamePhase = "fly"; phaseStartTime = now;
-                    crashX = (Math.random() * 3.5 + 1.05);
-                    vid.style.transform = "scale(1.1)"; vid.play();
-                    if(activeBet > 0) { 
-                        document.getElementById('main-btn').style.opacity = "1";
-                        document.getElementById('main-btn').innerText = "ЗАБРАТИ";
-                    }
-                }
-            } 
-            else if (gamePhase === "fly") {
-                curX = 1 + (elapsed / 1000) * 0.2;
-                liveXEl.innerText = curX.toFixed(2) + "x";
-
-                if (activeBet > 0 && !isCashed) {
-                    document.getElementById('bw-'+uName).innerText = (activeBet * curX).toFixed(0) + " ₴";
-                    document.getElementById('bx-'+uName).innerText = curX.toFixed(2) + "x";
-                    document.getElementById('main-btn').innerText = "ЗАБРАТИ " + (activeBet * curX).toFixed(0);
-                }
-
-                if (curX >= crashX) {
-                    gamePhase = "boom"; phaseStartTime = now;
-                    liveXEl.innerText = "BOOM!";
-                    liveXEl.style.color = "var(--red)";
-                    vid.style.transform = "scale(0)";
-                    historyX.unshift(crashX.toFixed(2) + 'x');
-                    const hb = document.getElementById('history-container');
-                    hb.innerHTML = `<div class="hs-item live" id="live-x">BOOM!</div>`;
-                    historyX.slice(0,10).forEach(val => hb.innerHTML += `<div class="hs-item">${val}</div>`);
-                }
-            } 
-            else if (gamePhase === "boom") {
-                if (elapsed > 2000) {
-                    gamePhase = "wait"; phaseStartTime = now;
-                    document.getElementById('bets-list').innerHTML = '';
-                    document.getElementById('main-btn').style.background = "linear-gradient(90deg, #007aff, #00c6ff)";
-                    document.getElementById('main-btn').innerText = "СТАВКА";
-                    activeBet = 0;
-                }
-            }
-            requestAnimationFrame(gameLoop);
-        }
-
         updateUI();
-        gameLoop();
     </script>
 </body>
 </html>
