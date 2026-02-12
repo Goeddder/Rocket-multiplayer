@@ -10,6 +10,11 @@
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
         body { background: #000; color: #fff; font-family: -apple-system, sans-serif; margin: 0; padding: 0; overflow: hidden; height: 100vh; }
 
+        /* Render Fix: Простий лоадер, поки прокидається сервіс */
+        #render-loader { position: fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index: 9999; display: flex; justify-content: center; align-items: center; transition: opacity 0.5s; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #111; border-top-color: var(--blue); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
         .bg-video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.35; z-index: 0; pointer-events: none; }
 
         @keyframes shake {
@@ -41,11 +46,10 @@
         #rocket-vid { width: 220px; mix-blend-mode: screen; transform: scale(0); transition: 0.3s; z-index: 2; }
         #boom-text { position: absolute; font-size: 55px; font-weight: 900; color: var(--red); display: none; z-index: 10; text-shadow: 0 0 20px black; }
 
-        /* СПИСОК СТАВОК ТА СТИЛЬ КНОПКИ */
         .bets-list { height: 180px; background: #000; padding: 10px 15px; overflow-y: auto; border-top: 1px solid #111; z-index: 10; }
-        .bet-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; margin-bottom: 6px; border-radius: 10px; background: rgba(255,255,255,0.03); border: 1px solid transparent; }
+        .bet-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; margin-bottom: 6px; border-radius: 10px; background: rgba(255,255,255,0.03); border: 1px solid transparent; transition: background 0.2s; }
         
-        /* СТИЛЬ СІРОЇ КНОПКИ ДЛЯ ТВОЄЇ СТАВКИ */
+        /* СІРА КНОПКА-СТАВКА */
         .bet-row.my-bet { background: var(--dark-btn); border: 1px solid #3a3a3c; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
 
         .nav-bar { position: fixed; bottom: 0; width: 100%; height: 65px; background: #0a0a0a; border-top: 1px solid #111; display: flex; justify-content: space-around; align-items: center; z-index: 100; }
@@ -56,7 +60,9 @@
         .lobby-btn img { width: 100%; display: block; }
     </style>
 </head>
-<body>
+<body onload="document.getElementById('render-loader').style.opacity='0'; setTimeout(()=>document.getElementById('render-loader').remove(), 500);">
+
+    <div id="render-loader"><div class="spinner"></div></div>
 
     <div id="lobby-screen" class="screen active">
         <video autoplay muted loop playsinline class="bg-video"><source src="https://files.catbox.moe/d91l6n.mp4"></video>
@@ -110,7 +116,7 @@
 
     <script>
         const tg = window.Telegram.WebApp;
-        tg.expand();
+        tg.ready(); // Render Fix: Повідомляємо TG що ми готові
 
         const user = tg.initDataUnsafe?.user || { first_name: "Гравець", id: "0" };
         const uName = user.username ? "@"+user.username : user.first_name;
@@ -195,14 +201,13 @@
                     gamePhase = "fly"; phaseStartTime = now;
                     vid.style.transform = "scale(1.1)"; vid.play();
                     document.getElementById('main-btn').style.opacity = "1";
-                    lastCrash = (Math.random() < 0.05) ? 1.00 : (Math.random() * 3 + 1.01);
+                    lastCrash = (Math.random() < 0.05) ? 1.00 : (Math.random() * 3.5 + 1.01);
                 }
             } 
             else if (gamePhase === "fly") {
                 const x = (1 + (elapsed / 1000) * 0.15).toFixed(2);
                 liveXEl.innerText = x + "x";
 
-                // ОНОВЛЕННЯ СТАВКИ В ТАБІ В РЕАЛЬНОМУ ЧАСІ
                 if (activeBet > 0 && !isCashed) {
                     const winLabel = document.getElementById('bet-win-Ви');
                     const xLabel = document.getElementById('bet-x-Ви');
