@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rocket Ultra Pro</title>
+    <title>Rocket Ultra Real Multiplayer</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
         :root { --blue: #007aff; --green: #34c759; --red: #ff3b30; --gray: #2c2c2e; --dark-btn: #1c1c1e; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
         body { background: #000; color: #fff; font-family: -apple-system, sans-serif; margin: 0; padding: 0; overflow: hidden; height: 100vh; }
 
-        /* Render Fix: Простий лоадер, поки прокидається сервіс */
         #render-loader { position: fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index: 9999; display: flex; justify-content: center; align-items: center; transition: opacity 0.5s; }
         .spinner { width: 40px; height: 40px; border: 4px solid #111; border-top-color: var(--blue); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -47,10 +47,8 @@
         #boom-text { position: absolute; font-size: 55px; font-weight: 900; color: var(--red); display: none; z-index: 10; text-shadow: 0 0 20px black; }
 
         .bets-list { height: 180px; background: #000; padding: 10px 15px; overflow-y: auto; border-top: 1px solid #111; z-index: 10; }
-        .bet-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; margin-bottom: 6px; border-radius: 10px; background: rgba(255,255,255,0.03); border: 1px solid transparent; transition: background 0.2s; }
-        
-        /* СІРА КНОПКА-СТАВКА */
-        .bet-row.my-bet { background: var(--dark-btn); border: 1px solid #3a3a3c; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+        .bet-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; margin-bottom: 6px; border-radius: 10px; background: rgba(255,255,255,0.03); border: 1px solid transparent; }
+        .bet-row.my-bet { background: var(--dark-btn); border: 1px solid #3a3a3c; }
 
         .nav-bar { position: fixed; bottom: 0; width: 100%; height: 65px; background: #0a0a0a; border-top: 1px solid #111; display: flex; justify-content: space-around; align-items: center; z-index: 100; }
         .nav-item { color: #555; font-size: 11px; display: flex; flex-direction: column; align-items: center; gap: 4px; width: 50%; cursor: pointer; }
@@ -60,7 +58,7 @@
         .lobby-btn img { width: 100%; display: block; }
     </style>
 </head>
-<body onload="document.getElementById('render-loader').style.opacity='0'; setTimeout(()=>document.getElementById('render-loader').remove(), 500);">
+<body onload="initMultiplayer(); document.getElementById('render-loader').style.opacity='0'; setTimeout(()=>document.getElementById('render-loader').remove(), 500);">
 
     <div id="render-loader"><div class="spinner"></div></div>
 
@@ -116,22 +114,44 @@
 
     <script>
         const tg = window.Telegram.WebApp;
-        tg.ready(); // Render Fix: Повідомляємо TG що ми готові
+        tg.ready();
 
-        const user = tg.initDataUnsafe?.user || { first_name: "Гравець", id: "0" };
+        const user = tg.initDataUnsafe?.user || { first_name: "Гість", id: Math.floor(Math.random()*1000) };
         const uName = user.username ? "@"+user.username : user.first_name;
         const uAvatar = user.photo_url || `https://ui-avatars.com/api/?name=${uName}&background=007aff&color=fff`;
         
         document.getElementById('pfp-big').src = uAvatar;
         document.getElementById('name-big').innerText = uName;
 
-        let balance = 500.00;
+        let balance = parseFloat(localStorage.getItem('rocket_bal')) || 500.00;
         let activeBet = 0, isCashed = false, lastCrash = 2.0, gamePhase = "wait"; 
         let phaseStartTime = Date.now();
         let historyX = [];
+        let socket;
+
+        // --- ДОДАЄМО ЛОГІКУ МУЛЬТИПЛЕЄРА ---
+        function initMultiplayer() {
+            // Тут має бути URL твого сервера на Render (наприклад: https://твій-проект.onrender.com)
+            socket = io(); 
+
+            // Слухаємо ставки від інших реальних гравців
+            socket.on('new_bet', (data) => {
+                if(data.user_id !== user.id) {
+                    upsertBet(data.name, data.avatar, data.amount);
+                }
+            });
+
+            // Слухаємо коли хтось забрав гроші
+            socket.on('player_cashed', (data) => {
+                if(data.user_id !== user.id) {
+                    upsertBet(data.name, data.avatar, data.amount, 'win', data.x, data.win);
+                }
+            });
+        }
 
         function updateUI() {
             document.querySelectorAll('.u-bal').forEach(el => el.innerText = balance.toFixed(2));
+            localStorage.setItem('rocket_bal', balance);
         }
 
         function showTab(id, el) {
@@ -150,7 +170,7 @@
             if (!row) {
                 row = document.createElement('div'); 
                 row.id = 'bet-' + name; 
-                row.className = 'bet-row' + (name === "Ви" ? " my-bet" : "");
+                row.className = 'bet-row' + (name === uName ? " my-bet" : "");
                 container.prepend(row);
             }
             const isWin = status === 'win';
@@ -170,14 +190,22 @@
                 const amt = parseFloat(document.getElementById('bet-input').value);
                 if(amt > balance || amt <= 0) return;
                 balance -= amt; activeBet = amt; isCashed = false; updateUI();
-                upsertBet("Ви", uAvatar, amt);
+                upsertBet(uName, uAvatar, amt);
+                
+                // ВІДПРАВЛЯЄМО СТАВКУ НА СЕРВЕР
+                if(socket) socket.emit('make_bet', { user_id: user.id, name: uName, avatar: uAvatar, amount: amt });
+
                 document.getElementById('main-btn').innerText = "ПРИЙНЯТО";
                 document.getElementById('main-btn').style.opacity = "0.5";
             } else if (gamePhase === "fly" && activeBet > 0 && !isCashed) {
                 const x = parseFloat(document.getElementById('live-x').innerText);
                 let win = (activeBet * x).toFixed(0);
                 balance += parseFloat(win); isCashed = true; updateUI();
-                upsertBet("Ви", uAvatar, activeBet, 'win', x, win);
+                upsertBet(uName, uAvatar, activeBet, 'win', x, win);
+                
+                // ВІДПРАВЛЯЄМО ВИГРАШ НА СЕРВЕР
+                if(socket) socket.emit('cash_out', { user_id: user.id, name: uName, avatar: uAvatar, amount: activeBet, x: x, win: win });
+
                 document.getElementById('main-btn').innerText = `+${win} ₴`;
                 document.getElementById('main-btn').style.background = "var(--green)";
                 activeBet = 0;
@@ -201,6 +229,7 @@
                     gamePhase = "fly"; phaseStartTime = now;
                     vid.style.transform = "scale(1.1)"; vid.play();
                     document.getElementById('main-btn').style.opacity = "1";
+                    // В мультиплеєрі lastCrash має приходити з сервера, щоб у всіх був однаковий результат
                     lastCrash = (Math.random() < 0.05) ? 1.00 : (Math.random() * 3.5 + 1.01);
                 }
             } 
@@ -209,8 +238,8 @@
                 liveXEl.innerText = x + "x";
 
                 if (activeBet > 0 && !isCashed) {
-                    const winLabel = document.getElementById('bet-win-Ви');
-                    const xLabel = document.getElementById('bet-x-Ви');
+                    const winLabel = document.getElementById('bet-win-'+uName);
+                    const xLabel = document.getElementById('bet-x-'+uName);
                     if (winLabel) winLabel.innerText = (activeBet * x).toFixed(0) + " ₴";
                     if (xLabel) xLabel.innerText = x + "x";
                     document.getElementById('main-btn').innerText = "ЗАБРАТИ " + (activeBet * x).toFixed(0);
@@ -222,10 +251,9 @@
                     view.classList.add('boom-shake');
                     vid.style.transform = "scale(0)";
                     historyX.unshift(lastCrash.toFixed(2) + 'x');
-                    if(historyX.length > 10) historyX.pop();
                     const hBar = document.getElementById('history-container');
                     hBar.innerHTML = '<div class="hs-item live" id="live-x">BOOM</div>';
-                    historyX.forEach(val => hBar.innerHTML += `<div class="hs-item">${val}</div>`);
+                    historyX.slice(0,10).forEach(val => hBar.innerHTML += `<div class="hs-item">${val}</div>`);
                 }
             } 
             else if (gamePhase === "boom") {
