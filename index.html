@@ -3,103 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rocket Ultra Final</title>
+    <title>Rocket Ultra</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
         :root { --blue: #007aff; --green: #34c759; --red: #ff3b30; }
         body { background: #000; color: #fff; font-family: sans-serif; margin: 0; overflow: hidden; height: 100vh; }
-        .bg-v { position: absolute; width: 100%; height: 100%; object-fit: cover; opacity: 0.3; z-index: 0; }
-        
-        .game-ui { position: relative; z-index: 10; height: 100%; display: flex; flex-direction: column; }
-        .top-info { padding: 15px; display: flex; justify-content: space-between; align-items: center; }
-        .status-badge { background: rgba(0,0,0,0.6); border: 1px solid var(--green); color: var(--green); padding: 5px 10px; border-radius: 10px; font-size: 12px; font-weight: bold; }
-        
-        #live-x { font-size: 48px; font-weight: 900; text-align: center; margin-top: 20px; text-shadow: 0 0 20px var(--blue); }
-        
-        .viewport { flex-grow: 1; display: flex; justify-content: center; align-items: center; }
+        .bg-v { position: absolute; width: 100%; height: 100%; object-fit: cover; opacity: 0.35; z-index: 0; }
+        .ui { position: relative; z-index: 10; height: 100%; display: flex; flex-direction: column; }
+        .top { padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        #live-x { font-size: 50px; font-weight: 900; text-align: center; margin-top: 30px; transition: 0.2s; }
+        .viewport { flex: 1; display: flex; justify-content: center; align-items: center; }
         #rocket { width: 220px; transition: transform 0.3s; transform: scale(0); mix-blend-mode: screen; }
-
-        .controls { padding: 20px; background: #000; border-top: 1px solid #222; }
-        #bet-btn { width: 100%; padding: 18px; border-radius: 15px; border: none; background: linear-gradient(90deg, #007aff, #00c6ff); color: #fff; font-size: 18px; font-weight: bold; }
+        .controls { padding: 20px; background: rgba(0,0,0,0.8); border-top: 1px solid #222; }
+        button { width: 100%; padding: 18px; border-radius: 15px; border: none; background: linear-gradient(90deg, #007aff, #00c6ff); color: #fff; font-size: 18px; font-weight: bold; }
         input { width: 100%; padding: 12px; background: #111; border: 1px solid #333; color: #fff; border-radius: 10px; margin-bottom: 10px; text-align: center; }
     </style>
 </head>
 <body>
     <video autoplay muted loop playsinline class="bg-v"><source src="https://files.catbox.moe/d91l6n.mp4"></video>
 
-    <div class="game-ui">
-        <div class="top-info">
-            <div class="status-badge">ONLINE: <span id="online-val">...</span></div>
-            <div style="color:var(--green); font-weight:bold;"><span id="balance">500</span> ₴</div>
+    <div class="ui">
+        <div class="top">
+            <div style="border:1px solid var(--green); padding:5px 10px; border-radius:10px; font-size:12px; color:var(--green)">ONLINE: <span id="on-val">0</span></div>
+            <div style="color:var(--green); font-weight:bold;"><span id="bal">500</span> ₴</div>
         </div>
-
         <div id="live-x">З'єднання...</div>
-
-        <div class="viewport">
-            <video id="rocket" playsinline muted loop><source src="https://files.catbox.moe/gkhz5v.mp4"></video>
-        </div>
-
+        <div class="viewport"><video id="rocket" playsinline muted loop><source src="https://files.catbox.moe/gkhz5v.mp4"></video></div>
         <div class="controls">
-            <input type="number" id="bet-amt" value="100">
-            <button id="bet-btn" onclick="makeBet()">СТАВКА</button>
+            <input type="number" id="amt" value="100">
+            <button id="btn" onclick="bet()">СТАВКА</button>
         </div>
     </div>
 
     <script>
         const socket = io("https://rocket-multiplayer.onrender.com", { transports: ['websocket'] });
-        let balance = 500, myBet = 0, isCashed = false, curX = 1.0, currentPhase = "";
+        let balance = 500, myBet = 0, isOut = false, curX = 1.0, phase = "";
 
         socket.on("gameUpdate", (data) => {
-            document.getElementById('online-val').innerText = data.online;
+            document.getElementById('on-val').innerText = data.online;
             const lx = document.getElementById('live-x');
             const rkt = document.getElementById('rocket');
-            currentPhase = data.phase;
+            phase = data.phase;
 
-            if (data.phase === "wait") {
+            if (phase === "wait") {
                 lx.innerText = data.timer + "s";
-                lx.style.color = "var(--blue)";
-                rkt.style.transform = "scale(0.8)"; // Ракетка вже чекає
+                lx.style.color = var(--blue);
+                rkt.style.transform = "scale(0.8)"; 
                 rkt.pause();
-            } else if (data.phase === "fly") {
+                resetBtn();
+            } else if (phase === "fly") {
                 curX = parseFloat(data.currentX);
                 lx.innerText = curX.toFixed(2) + "x";
                 lx.style.color = "#fff";
                 rkt.style.transform = "scale(1.2)";
                 rkt.play();
-                if(myBet > 0 && !isCashed) {
-                    document.getElementById('bet-btn').innerText = "ЗАБРАТИ " + (myBet * curX).toFixed(0);
-                }
-            } else if (data.phase === "boom") {
+                if(myBet > 0 && !isOut) document.getElementById('btn').innerText = "ЗАБРАТИ " + (myBet * curX).toFixed(0);
+            } else if (phase === "boom") {
                 lx.innerText = "BOOM!";
-                lx.style.color = "var(--red)";
+                lx.style.color = var(--red);
                 rkt.style.transform = "scale(0)";
-                resetUI();
             }
         });
 
-        function makeBet() {
-            const btn = document.getElementById('bet-btn');
-            if (currentPhase === "wait" && myBet === 0) {
-                let amt = parseFloat(document.getElementById('bet-amt').value);
-                if (amt > balance) return;
-                balance -= amt; myBet = amt; isCashed = false;
-                document.getElementById('balance').innerText = balance;
+        function bet() {
+            const btn = document.getElementById('btn');
+            if (phase === "wait" && myBet === 0) {
+                let a = parseFloat(document.getElementById('amt').value);
+                if (a > balance) return;
+                balance -= a; myBet = a; isOut = false;
+                document.getElementById('bal').innerText = balance;
                 btn.innerText = "ПРИЙНЯТО"; btn.style.opacity = "0.5";
-            } else if (currentPhase === "fly" && myBet > 0 && !isCashed) {
+                socket.emit("placeBet", { amount: a });
+            } else if (phase === "fly" && myBet > 0 && !isOut) {
                 balance += myBet * curX;
-                isCashed = true; myBet = 0;
-                document.getElementById('balance').innerText = balance.toFixed(2);
-                btn.innerText = "ВИГРАШ!"; btn.style.background = "var(--green)";
+                isOut = true; myBet = 0;
+                document.getElementById('bal').innerText = balance.toFixed(2);
+                btn.innerText = "ВИГРАШ!"; btn.style.background = var(--green);
             }
         }
 
-        function resetUI() {
-            myBet = 0; isCashed = false;
-            const btn = document.getElementById('bet-btn');
-            btn.style.opacity = "1";
-            btn.style.background = "linear-gradient(90deg, #007aff, #00c6ff)";
-            btn.innerText = "СТАВКА";
+        function resetBtn() {
+            const btn = document.getElementById('btn');
+            if(myBet === 0) {
+                btn.style.opacity = "1";
+                btn.style.background = "linear-gradient(90deg, #007aff, #00c6ff)";
+                btn.innerText = "СТАВКА";
+            }
         }
     </script>
 </body>
