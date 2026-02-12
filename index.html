@@ -3,93 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rocket Ultra</title>
+    <title>Rocket Game</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
-        :root { --blue: #007aff; --green: #34c759; --red: #ff3b30; }
-        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; overflow: hidden; height: 100vh; }
-        .bg-v { position: absolute; width: 100%; height: 100%; object-fit: cover; opacity: 0.35; z-index: 0; }
-        .ui { position: relative; z-index: 10; height: 100%; display: flex; flex-direction: column; }
-        .top { padding: 15px; display: flex; justify-content: space-between; align-items: center; }
-        #live-x { font-size: 50px; font-weight: 900; text-align: center; margin-top: 30px; transition: 0.2s; }
-        .viewport { flex: 1; display: flex; justify-content: center; align-items: center; }
-        #rocket { width: 220px; transition: transform 0.3s; transform: scale(0); mix-blend-mode: screen; }
-        .controls { padding: 20px; background: rgba(0,0,0,0.8); border-top: 1px solid #222; }
-        button { width: 100%; padding: 18px; border-radius: 15px; border: none; background: linear-gradient(90deg, #007aff, #00c6ff); color: #fff; font-size: 18px; font-weight: bold; }
-        input { width: 100%; padding: 12px; background: #111; border: 1px solid #333; color: #fff; border-radius: 10px; margin-bottom: 10px; text-align: center; }
+        body { background: #000; color: #fff; font-family: sans-serif; margin: 0; text-align: center; }
+        #game-ui { display: block; padding: 20px; }
+        .rocket-box { height: 200px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        #rocket-vid { width: 200px; display: none; }
+        .stat { font-size: 40px; font-weight: bold; margin: 20px 0; }
+        button { width: 100%; padding: 20px; background: #007aff; color: #fff; border: none; border-radius: 15px; font-size: 18px; }
     </style>
 </head>
 <body>
-    <video autoplay muted loop playsinline class="bg-v"><source src="https://files.catbox.moe/d91l6n.mp4"></video>
+    <div id="game-ui">
+        <div style="display:flex; justify-content: space-between; color: #34c759;">
+            <span>ONLINE: <b id="on">0</b></span>
+            <span>БАЛАНС: <b id="bal">500</b></span>
+        </div>
+        
+        <div id="status" style="margin-top: 20px; color: #007aff;">Підключення до сервера...</div>
+        <div class="stat" id="x-val">1.00x</div>
+        
+        <div class="rocket-box">
+            <video id="rocket-vid" autoplay muted loop playsinline>
+                <source src="https://files.catbox.moe/gkhz5v.mp4">
+            </video>
+        </div>
 
-    <div class="ui">
-        <div class="top">
-            <div style="border:1px solid var(--green); padding:5px 10px; border-radius:10px; font-size:12px; color:var(--green)">ONLINE: <span id="on-val">0</span></div>
-            <div style="color:var(--green); font-weight:bold;"><span id="bal">500</span> ₴</div>
-        </div>
-        <div id="live-x">З'єднання...</div>
-        <div class="viewport"><video id="rocket" playsinline muted loop><source src="https://files.catbox.moe/gkhz5v.mp4"></video></div>
-        <div class="controls">
-            <input type="number" id="amt" value="100">
-            <button id="btn" onclick="bet()">СТАВКА</button>
-        </div>
+        <button id="main-btn" onclick="doAction()">СТАВКА</button>
     </div>
 
     <script>
-        const socket = io("https://rocket-multiplayer.onrender.com", { transports: ['websocket'] });
-        let balance = 500, myBet = 0, isOut = false, curX = 1.0, phase = "";
+        // Ініціалізація Telegram
+        const tg = window.Telegram.WebApp;
+        tg.expand();
 
+        // Підключення до твого Render сервера
+        const socket = io("https://rocket-multiplayer.onrender.com", {
+            transports: ["websocket", "polling"]
+        });
+
+        let currentX = 1.0;
+        let isFlying = false;
+
+        // Слухаємо дані від сервера
         socket.on("gameUpdate", (data) => {
-            document.getElementById('on-val').innerText = data.online;
-            const lx = document.getElementById('live-x');
-            const rkt = document.getElementById('rocket');
-            phase = data.phase;
+            document.getElementById('on').innerText = data.online;
+            const status = document.getElementById('status');
+            const xVal = document.getElementById('x-val');
+            const vid = document.getElementById('rocket-vid');
 
-            if (phase === "wait") {
-                lx.innerText = data.timer + "s";
-                lx.style.color = var(--blue);
-                rkt.style.transform = "scale(0.8)"; 
-                rkt.pause();
-                resetBtn();
-            } else if (phase === "fly") {
-                curX = parseFloat(data.currentX);
-                lx.innerText = curX.toFixed(2) + "x";
-                lx.style.color = "#fff";
-                rkt.style.transform = "scale(1.2)";
-                rkt.play();
-                if(myBet > 0 && !isOut) document.getElementById('btn').innerText = "ЗАБРАТИ " + (myBet * curX).toFixed(0);
-            } else if (phase === "boom") {
-                lx.innerText = "BOOM!";
-                lx.style.color = var(--red);
-                rkt.style.transform = "scale(0)";
+            if (data.phase === "wait") {
+                isFlying = false;
+                status.innerText = "Очікування: " + data.timer + "с";
+                status.style.color = "#007aff";
+                vid.style.display = "none";
+                xVal.innerText = "1.00x";
+            } 
+            else if (data.phase === "fly") {
+                isFlying = true;
+                status.innerText = "У ПОЛЬОТІ";
+                status.style.color = "#fff";
+                vid.style.display = "block";
+                xVal.innerText = data.currentX + "x";
+                currentX = parseFloat(data.currentX);
+            } 
+            else if (data.phase === "boom") {
+                isFlying = false;
+                status.innerText = "BOOM!";
+                status.style.color = "#ff3b30";
+                vid.style.display = "none";
             }
         });
 
-        function bet() {
-            const btn = document.getElementById('btn');
-            if (phase === "wait" && myBet === 0) {
-                let a = parseFloat(document.getElementById('amt').value);
-                if (a > balance) return;
-                balance -= a; myBet = a; isOut = false;
-                document.getElementById('bal').innerText = balance;
-                btn.innerText = "ПРИЙНЯТО"; btn.style.opacity = "0.5";
-                socket.emit("placeBet", { amount: a });
-            } else if (phase === "fly" && myBet > 0 && !isOut) {
-                balance += myBet * curX;
-                isOut = true; myBet = 0;
-                document.getElementById('bal').innerText = balance.toFixed(2);
-                btn.innerText = "ВИГРАШ!"; btn.style.background = var(--green);
-            }
-        }
+        // Якщо сервер не відповідає
+        socket.on("connect_error", () => {
+            document.getElementById('status').innerText = "Сервер прокидається (зачекайте 30с)...";
+        });
 
-        function resetBtn() {
-            const btn = document.getElementById('btn');
-            if(myBet === 0) {
-                btn.style.opacity = "1";
-                btn.style.background = "linear-gradient(90deg, #007aff, #00c6ff)";
-                btn.innerText = "СТАВКА";
-            }
+        function doAction() {
+            // Тут буде логіка ставки
+            alert("Ставка прийнята! Очікуйте раунду.");
         }
     </script>
 </body>
