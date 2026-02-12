@@ -1,40 +1,37 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
-const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { 
-    cors: { origin: "*" } 
-});
+const io = new Server(server, { cors: { origin: "*" } });
 
-// Роздаємо статичні файли (наш index.html)
 app.use(express.static(__dirname));
 
 let activeBets = [];
+let onlineCount = 0;
 
 io.on('connection', (socket) => {
-    console.log('Новий гравець підключився');
-
-    // Відправляємо список ставок новому гравцю
+    onlineCount++;
+    io.emit('update_online', onlineCount);
     socket.emit('update_bets', activeBets);
 
-    // Коли хтось робить ставку
     socket.on('place_bet', (betData) => {
         activeBets.push(betData);
-        // Розсилаємо всім реальним гравцям нову ставку
         io.emit('update_bets', activeBets);
     });
 
-    // Очищення ставок при новому раунді
-    socket.on('clear_round', () => {
+    // Нова функція: сервер очищає список для всіх
+    socket.on('reset_all_bets', () => {
         activeBets = [];
         io.emit('update_bets', activeBets);
+    });
+
+    socket.on('disconnect', () => {
+        onlineCount--;
+        io.emit('update_online', onlineCount);
     });
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`Сервер працює на порту ${PORT}`);
-});
+server.listen(PORT, () => console.log(`Server live on ${PORT}`));
