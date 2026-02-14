@@ -7,64 +7,70 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <script src="https://unpkg.com/@tonconnect/sdk@latest/dist/tonconnect-sdk.min.js"></script>
     <style>
         :root { --bg: #000; --panel: #161618; --blue: #007aff; --gold: #b8860b; --border: rgba(255,255,255,0.1); }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; outline: none; }
         
-        body, html { 
-            background: var(--bg); color: white; font-family: -apple-system, sans-serif; 
-            margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; position: fixed;
-        }
+        body, html { background: var(--bg); color: white; font-family: -apple-system, sans-serif; margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; position: fixed; }
 
-        /* Header */
+        .btn-main { background: var(--blue); border: none; border-radius: 16px; color: white; font-weight: 900; padding: 18px; width: 100%; font-size: 17px; cursor: pointer; transition: transform 0.1s ease; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-main:active { transform: scale(0.95); }
+
+        /* LOADING */
+        #loading-screen { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.6s ease; }
+        .load-rocket { width: 140px; margin-bottom: 25px; animation: float 2s infinite ease-in-out; }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        .load-bar-outer { width: 65%; height: 4px; background: #1c1c1e; border-radius: 10px; overflow: hidden; }
+        .load-bar-inner { width: 0%; height: 100%; background: var(--blue); box-shadow: 0 0 15px var(--blue); transition: width 0.3s ease; }
+        #load-status { margin-top: 15px; font-size: 10px; color: #8e8e93; letter-spacing: 1px; text-transform: uppercase; }
+
+        /* UI ELEMENTS */
         .header-ui { position: absolute; top: 0; width: 100%; height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; z-index: 1000; }
         .top-balance { background: rgba(22, 22, 24, 0.8); padding: 8px 12px; border-radius: 12px; display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); backdrop-filter: blur(10px); }
-        .ton-ico { width: 18px; height: 18px; border-radius: 50%; }
+        .ton-ico { width: 16px; height: 16px; border-radius: 50%; }
 
-        /* Pages */
-        .page { position: absolute; inset: 0; padding-bottom: 100px; display: none; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        .page { position: absolute; inset: 0; padding-bottom: 100px; display: none; overflow-y: auto; }
         .active-page { display: block; }
 
-        /* Game UI */
         .history-bar { height: 45px; display: flex; align-items: center; gap: 8px; padding: 0 15px; margin-top: 60px; border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; }
         .h-item { background: #1c1c1e; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 900; color: #34c759; border: 1px solid var(--border); flex-shrink: 0; }
-        .h-item.live { background: rgba(0, 122, 255, 0.2); color: var(--blue); border-color: var(--blue); }
+        .h-item.live { background: rgba(0, 122, 255, 0.2); color: white; border-color: var(--blue); min-width: 55px; text-align: center; }
 
         .video-box { width: 100%; height: 35vh; min-height: 250px; position: relative; background: #000; overflow: hidden; }
         #bg-vid { width: 100%; height: 100%; object-fit: cover; }
         #rocket-vid { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 150px; z-index: 2; display: none; }
-        #timer { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); font-size: 55px; font-weight: 900; color: var(--blue); z-index: 5; text-shadow: 0 0 20px rgba(0,122,255,0.4); }
 
-        /* Bets */
-        #bets-list { padding: 15px; }
-        .bet-card { background: var(--panel); border-radius: 18px; padding: 12px 15px; margin-bottom: 8px; border: 1px solid var(--border); display: flex; align-items: center; gap: 12px; transition: all 0.3s ease; }
-        .bet-card.won { border-color: #34c759; background: rgba(52, 199, 89, 0.12); transform: scale(1.02); }
-        .u-ava { width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--blue); object-fit: cover; }
+        #bets-list { padding: 0 15px; margin-top: 10px; transition: opacity 0.3s ease; }
+        .bet-card { background: var(--panel); border-radius: 14px; padding: 8px 12px; margin-bottom: 6px; border: 1px solid var(--border); display: flex; align-items: center; gap: 10px; animation: betIn 0.3s ease-out forwards; }
+        @keyframes betIn { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .bet-card.won { border-color: #34c759; background: rgba(52, 199, 89, 0.1); }
+        .u-ava { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 1.5px solid var(--blue); }
 
-        /* Profile & XP */
-        .xp-card { background: var(--panel); border-radius: 24px; padding: 20px; border: 1px solid var(--border); margin: 0 15px; }
-        .xp-bar-outer { width: 100%; background: #2c2c2e; height: 12px; border-radius: 6px; margin: 12px 0; overflow: hidden; }
-        .xp-bar-inner { background: linear-gradient(90deg, #007aff, #00c6ff); height: 100%; width: 0%; transition: width 0.8s cubic-bezier(0.17, 0.67, 0.83, 0.67); }
+        .xp-card { background: var(--panel); border-radius: 20px; padding: 20px; border: 1px solid var(--border); margin: 0 15px; }
+        .xp-bar-outer { width: 100%; background: #2c2c2e; height: 10px; border-radius: 5px; margin: 15px 0; overflow: hidden; }
+        .xp-bar-inner { background: var(--blue); height: 100%; width: 0%; transition: width 0.5s; }
+        .lang-sw { display: flex; justify-content: center; gap: 8px; margin-top: 15px; }
+        .lang-btn { background: #1c1c1e; border: 1px solid var(--border); color: white; padding: 6px 14px; border-radius: 8px; font-size: 11px; opacity: 0.5; }
+        .lang-btn.active { opacity: 1; border-color: var(--blue); background: rgba(0, 122, 255, 0.2); }
 
-        /* Navigation */
         .nav { background: #161618; display: flex; justify-content: space-around; padding: 10px 0 25px; position: fixed; bottom: 0; width: 100%; border-top: 1px solid var(--border); z-index: 1000; }
-        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #8e8e93; font-size: 10px; opacity: 0.6; }
-        .nav-item.active { opacity: 1; color: white; }
-        .nav-item img { width: 26px; height: 26px; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #8e8e93; font-size: 10px; }
+        .nav-item.active { color: white; }
+        .nav-item img { width: 24px; height: 24px; }
 
-        /* Modals */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); z-index: 2000; display: none; align-items: flex-end; }
-        .modal-content { width: 100%; background: #121212; border-radius: 30px 30px 0 0; padding: 25px 25px 40px; border-top: 1px solid var(--border); }
-        .btn-main { background: var(--blue); border: none; border-radius: 18px; color: white; font-weight: 900; padding: 18px; width: 100%; font-size: 17px; cursor: pointer; }
-        .dep-tabs { display: flex; background: #1c1c1e; padding: 4px; border-radius: 14px; margin-bottom: 20px; }
-        .dep-tab { flex: 1; text-align: center; padding: 12px; border-radius: 10px; color: #8e8e93; font-size: 14px; }
-        .dep-tab.active { background: var(--blue); color: white; }
-        
-        .skin-item { display: flex; align-items: center; gap: 12px; background: #262628; padding: 12px; border-radius: 18px; margin-bottom: 10px; border: 1px solid #333; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 2000; display: none; align-items: flex-end; }
+        .modal-content { width: 100%; background: #1c1c1e; border-radius: 20px 20px 0 0; padding: 20px 20px 40px; transform: translateY(100%); transition: transform 0.3s ease; }
+        .modal-overlay.open { display: flex; }
+        .modal-overlay.open .modal-content { transform: translateY(0); }
     </style>
 </head>
 <body>
+
+    <div id="loading-screen">
+        <img src="https://files.catbox.moe/h9mww2.webp" class="load-rocket">
+        <div class="load-bar-outer"><div id="load-bar" class="load-bar-inner"></div></div>
+        <div id="load-status">Завантаження ресурсів...</div>
+    </div>
 
     <div class="header-ui">
         <div class="top-balance">
@@ -76,238 +82,229 @@
     <div id="page-game" class="page active-page">
         <div class="history-bar" id="history-line"></div>
         <div class="video-box">
-            <div id="timer"></div>
             <video id="bg-vid" autoplay loop muted playsinline><source src="https://files.catbox.moe/7xmbxz.mp4"></video>
-            <video id="rocket-vid" autoplay loop muted playsinline><source id="rocket-src" src="https://files.catbox.moe/zwtvwd.mp4"></video>
-            <img src="https://files.catbox.moe/zbsdq6.png" style="position:absolute; bottom:15px; right:15px; width:34px; z-index:10;" onclick="openModal('rewardsModal')">
+            <img id="rocket-vid" src="https://files.catbox.moe/uisxbb.webp">
+            <img src="https://files.catbox.moe/zbsdq6.png" style="position:absolute; bottom:15px; right:15px; width:28px; z-index:10;" onclick="openModal('rewardsModal')">
         </div>
         <div style="padding:15px; display:flex; gap:10px;">
             <button class="btn-main" id="bet-btn" onclick="openModal('betModal')">СТАВКА</button>
-            <button class="btn-main" id="cash-btn" style="background:#248a3d; display:none;" onclick="cashOut()">ЗАБРАТИ</button>
+            <button class="btn-main" id="cash-btn" style="background:#248a3d; display:none;" onclick="cashOut()">
+                <img src="https://files.catbox.moe/p3i6o2.jpeg" class="ton-ico"> <span id="cash-val">0.00</span>
+            </button>
         </div>
         <div id="bets-list"></div>
     </div>
 
     <div id="page-profile" class="page">
-        <div style="padding:80px 0 20px;">
-            <div style="text-align:center; margin-bottom:30px;">
-                <img id="p-ava" src="https://files.catbox.moe/ykuewj.png" style="width:100px; height:100px; border-radius:50%; border:3px solid var(--blue); object-fit:cover;">
-                <h2 id="p-nick" style="margin:12px 0 5px;">User</h2>
-                <div id="p-lvl-text" style="color:var(--blue); font-weight:900;">LVL 1</div>
+        <div style="padding:80px 0 20px; text-align:center;">
+            <img id="p-ava" src="https://files.catbox.moe/ykuewj.png" style="width:100px; height:100px; border-radius:50%; border:3px solid var(--blue); object-fit:cover;">
+            <h2 id="p-nick" style="margin:12px 0 5px;">User</h2>
+            <div id="p-lvl-text" style="color:var(--blue); font-weight:900; font-size:18px;">LVL 1</div>
+            
+            <div class="lang-sw">
+                <div class="lang-btn active" onclick="updateLanguage('uk', this)">UK</div>
+                <div class="lang-btn" onclick="updateLanguage('en', this)">EN</div>
+                <div class="lang-btn" onclick="updateLanguage('ru', this)">RU</div>
             </div>
-            <div class="xp-card">
-                <div style="display:flex; justify-content:space-between; font-size:12px; color:#8e8e93;">
-                    <span>До наступного рівня</span>
-                    <span id="xp-stats">0 / 200 XP</span>
-                </div>
+
+            <div class="xp-card" style="margin-top:20px;">
+                <div id="xp-stats" style="font-size:13px; color:#8e8e93; margin-bottom:5px;">XP: 0 / 200</div>
                 <div class="xp-bar-outer"><div id="xp-fill" class="xp-bar-inner"></div></div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:15px;">
-                    <button class="btn-main" style="padding:12px; font-size:14px;" onclick="openModal('depositModal')">ДЕПОЗИТ</button>
-                    <button class="btn-main" style="padding:12px; font-size:14px; background:var(--gold);" onclick="openModal('rewardsModal')">ГАРАЖ</button>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:15px;">
+                    <button class="btn-main" id="txt-dep" style="padding:12px; font-size:14px;" onclick="tg.showAlert('Soon!')">ДЕПОЗИТ</button>
+                    <button class="btn-main" id="txt-gar" style="padding:12px; font-size:14px; background:var(--gold);" onclick="openModal('rewardsModal')">ГАРАЖ</button>
                 </div>
             </div>
         </div>
     </div>
 
     <nav class="nav">
-        <div class="nav-item active" onclick="tab('page-game', this)"><img src="https://files.catbox.moe/dtuawh.png"><span>ГРА</span></div>
-        <div class="nav-item" onclick="tab('page-profile', this)"><img src="https://files.catbox.moe/ykuewj.png"><span>ПРОФІЛЬ</span></div>
+        <div class="nav-item active" onclick="tab('page-game', this)"><img src="https://files.catbox.moe/dtuawh.png"><span id="txt-nav-game">ГРА</span></div>
+        <div class="nav-item" onclick="tab('page-profile', this)"><img src="https://files.catbox.moe/ykuewj.png"><span id="txt-nav-prof">ПРОФІЛЬ</span></div>
     </nav>
 
     <div class="modal-overlay" id="betModal" onclick="closeModal('betModal')">
         <div class="modal-content" onclick="event.stopPropagation()">
-            <h3 style="text-align:center; margin:0 0 20px;">Сума ставки (TON)</h3>
-            <input type="number" id="betInput" placeholder="0.10" style="width:100%; background:#1c1c1e; border:1px solid #333; color:white; padding:20px; border-radius:18px; font-size:24px; text-align:center; margin-bottom:20px;">
-            <button class="btn-main" onclick="confirmBet()">ПІДТВЕРДИТИ</button>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="depositModal" onclick="closeModal('depositModal')">
-        <div class="modal-content" onclick="event.stopPropagation()">
-            <div class="dep-tabs">
-                <div id="t-wal" class="dep-tab active" onclick="switchDep('wallet')">Wallet</div>
-                <div id="t-cry" class="dep-tab" onclick="switchDep('crypto')">CryptoBot</div>
-            </div>
-            <div id="wal-area" onclick="connectTon()" style="text-align:center; padding:30px; border:1px dashed #444; border-radius:20px;">
-                🔗 Приєднати TON гаманець
-            </div>
-            <div id="cry-area" style="display:none;">
-                <input type="number" id="cryAmt" value="1.0" style="width:100%; background:#1c1c1e; border:none; padding:15px; border-radius:12px; color:white; font-size:22px; text-align:center; margin-bottom:15px;">
-                <button class="btn-main" onclick="tg.showAlert('Функція CryptoBot підключається...')">Створити рахунок</button>
-            </div>
+            <input type="number" id="betInput" placeholder="0.10" style="width:100%; background:#262628; border:none; padding:20px; border-radius:15px; color:white; font-size:24px; text-align:center; margin-bottom:20px;">
+            <button class="btn-main" id="txt-confirm" onclick="confirmBet()">ПІДТВЕРДИТИ</button>
         </div>
     </div>
 
     <div class="modal-overlay" id="rewardsModal" onclick="closeModal('rewardsModal')">
         <div class="modal-content" onclick="event.stopPropagation()">
-            <h3 style="text-align:center; margin-bottom:20px;">🚀 ГАРАЖ</h3>
-            <div id="skins-grid" style="max-height:50vh; overflow-y:auto;"></div>
+            <h3 id="txt-garage-title" style="text-align:center; margin-bottom:20px;">🚀 ГАРАЖ</h3>
+            <div id="skins-grid" style="max-height:50vh; overflow-y:auto; display:grid; grid-template-columns: repeat(3, 1fr); gap:10px;"></div>
         </div>
     </div>
 
 <script>
-    const socket = io("https://rocket-multiplayer.onrender.com");
-    const tg = window.Telegram.WebApp;
-    const connector = new TonConnectSDK.TonConnect({ manifestUrl: 'https://raw.githubusercontent.com/ton-connect/demo-dapp/main/public/tonconnect-manifest.json' });
-
-    // РЕЄСТРАЦІЯ ЗА TG ID
-    const TG_ID = tg.initDataUnsafe?.user?.id || "1471307057";
-    const DB_KEY = `rocket_data_${TG_ID}`;
+    const i18n = {
+        uk: { bet: "СТАВКА", next: "У ЧЕРЗІ", win: "ВИГРАНО!", load: "Завантаження...", game: "ГРА", prof: "ПРОФІЛЬ", dep: "ДЕПОЗИТ", gar: "ГАРАЖ", confirm: "ПІДТВЕРДИТИ", cash: "ЗАБРАТИ", balance: "Баланс" },
+        en: { bet: "BET", next: "IN QUEUE", win: "WON!", load: "Loading...", game: "GAME", prof: "PROFILE", dep: "DEPOSIT", gar: "GARAGE", confirm: "CONFIRM", cash: "CASH OUT", balance: "Balance" },
+        ru: { bet: "СТАВКА", next: "В ОЧЕРЕДИ", win: "ВЫИГРАНО!", load: "Загрузка...", game: "ИГРА", prof: "ПРОФИЛЬ", dep: "ДЕПОЗИТ", gar: "ГАРАЖ", confirm: "ПОДТВЕРДИТЬ", cash: "ЗАБРАТЬ", balance: "Баланс" }
+    };
     
-    let userData = JSON.parse(localStorage.getItem(DB_KEY)) || { balance: 10.00, xp: 0, lvl: 1, next: 200 };
-    let currentBet = 0, nextBet = 0, multiplier = 1.00, gameState = "wait", isCashed = false;
-    let historyX = JSON.parse(localStorage.getItem(`hist_${TG_ID}`)) || [];
+    let curL = 'uk';
+    const tg = window.Telegram.WebApp;
+    const socket = io("https://rocket-multiplayer.onrender.com");
+    
+    let userData = JSON.parse(localStorage.getItem(`rocket_v18_${tg.initDataUnsafe?.user?.id || '1471307057'}`)) || { balance: 10.00, xp: 0, lvl: 1, next: 200, currentSkin: 'https://files.catbox.moe/uisxbb.webp', lang: 'uk' };
+    let currentBet = 0, nextBet = 0, multiplier = 1.00, gameState = "wait", isCashed = false, historyX = [], knownBets = new Set();
 
-    const skins = [
-        { lvl: 1, src: 'https://files.catbox.moe/zwtvwd.mp4', name: 'Titan I' },
-        { lvl: 2, src: 'https://files.catbox.moe/gjd079.mp4', name: 'Neon X' },
-        { lvl: 3, src: 'https://files.catbox.moe/ojfjj6.mp4', name: 'Plasma' },
-        { lvl: 4, src: 'https://files.catbox.moe/ztu9td.mp4', name: 'Void' },
-        { lvl: 5, src: 'https://files.catbox.moe/d6ifkr.mp4', name: 'Fire' },
-        { lvl: 6, src: 'https://files.catbox.moe/0uz1uk.mp4', name: 'Gold' },
-        { lvl: 7, src: 'https://files.catbox.moe/7vrzzy.mp4', name: 'Cyber' },
-        { lvl: 8, src: 'https://files.catbox.moe/3schal.mp4', name: 'Alien' },
-        { lvl: 9, src: 'https://files.catbox.moe/npixkw.mp4', name: 'TON Elite' }
-    ];
+    function updateLanguage(lang, el) {
+        curL = lang;
+        userData.lang = lang;
+        if(el) {
+            document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
+        }
+        document.getElementById('txt-nav-game').innerText = i18n[lang].game;
+        document.getElementById('txt-nav-prof').innerText = i18n[lang].prof;
+        document.getElementById('txt-dep').innerText = i18n[lang].dep;
+        document.getElementById('txt-gar').innerText = i18n[lang].gar;
+        document.getElementById('txt-confirm').innerText = i18n[lang].confirm;
+        document.getElementById('txt-garage-title').innerText = "🚀 " + i18n[lang].gar;
+        document.getElementById('load-status').innerText = i18n[lang].load;
+        
+        // Оновлюємо кнопки в реальному часі
+        if(gameState === 'wait') document.getElementById('bet-btn').innerText = currentBet > 0 ? "OK" : i18n[curL].bet;
+        if(nextBet > 0) document.getElementById('bet-btn').innerText = i18n[curL].next;
+        save();
+    }
 
     socket.on('gameUpdate', (data) => {
         gameState = data.s; multiplier = data.m;
-        const t = document.getElementById('timer'), r = document.getElementById('rocket-vid');
+        const r = document.getElementById('rocket-vid');
+        const bList = document.getElementById('bets-list');
+        const hLine = document.getElementById('history-line');
 
-        if(gameState === "wait") {
-            t.innerText = data.t + "s"; r.style.display = 'none';
+        let liveVal = gameState === 'wait' ? data.t + "s" : multiplier.toFixed(2) + "x";
+        hLine.innerHTML = `<div class="h-item live">${liveVal}</div>` + historyX.map(x => `<div class="h-item">${x}</div>`).join('');
+
+        if(gameState === 'wait') {
+            r.style.display = 'none';
             if(nextBet > 0) { currentBet = nextBet; nextBet = 0; sendBet(); }
-            document.getElementById('bet-btn').innerText = currentBet > 0 ? "СТАВКА ПРИЙНЯТА" : "СТАВКА";
+            document.getElementById('bet-btn').innerText = currentBet > 0 ? "OK" : i18n[curL].bet;
             document.getElementById('cash-btn').style.display = 'none';
             document.getElementById('bet-btn').style.display = 'block';
             isCashed = false;
-        } else if(gameState === "fly") {
-            t.innerText = ""; r.style.display = 'block';
+        } else if(gameState === 'fly') {
+            r.style.display = 'block';
             if(currentBet > 0 && !isCashed) {
                 document.getElementById('bet-btn').style.display = 'none';
-                document.getElementById('cash-btn').style.display = 'block';
-                document.getElementById('cash-btn').innerText = `ЗАБРАТИ ${(currentBet*multiplier).toFixed(2)}`;
+                document.getElementById('cash-btn').style.display = 'flex';
+                document.getElementById('cash-val').innerText = (currentBet * multiplier).toFixed(2);
             }
-        } else if(gameState === "crash") {
-            if(!t.innerText.includes("💥")) { historyX.push(multiplier.toFixed(2)); save(); }
-            t.innerText = "💥 " + multiplier.toFixed(2) + "x"; r.style.display = 'none';
-            document.getElementById('cash-btn').style.display = 'none';
-            document.getElementById('bet-btn').style.display = 'block';
+        } else if(gameState === 'crash') {
+            r.style.display = 'none';
+            if(!historyX.includes(multiplier.toFixed(2) + 'x')) {
+                historyX.unshift(multiplier.toFixed(2) + 'x');
+                if(historyX.length > 8) historyX.pop();
+                bList.style.opacity = "0";
+                setTimeout(() => { bList.innerHTML = ""; bList.style.opacity = "1"; knownBets.clear(); }, 500);
+            }
             currentBet = 0;
+            document.getElementById('bet-btn').innerText = nextBet > 0 ? i18n[curL].next : i18n[curL].bet;
         }
 
-        if(data.bets) {
-            const myName = tg.initDataUnsafe?.user?.first_name || 'User';
-            document.getElementById('bets-list').innerHTML = data.bets.map(b => {
-                const isMe = b.nick === myName;
-                const m = b.cashedOut ? b.winX : multiplier;
-                return `<div class="bet-card ${b.cashedOut ? 'won' : ''}">
-                    <img src="${b.ava}" class="u-ava">
-                    <div style="flex:1"><b>${b.nick}</b><br><small style="color:#34c759">${(b.amount * m).toFixed(2)} TON</small></div>
-                    <div style="font-weight:900; font-size:18px; color:var(--blue)">${parseFloat(m).toFixed(2)}x</div>
-                </div>`;
-            }).join('');
+        if(data.bets && gameState !== 'crash') {
+            data.bets.forEach(b => {
+                const bId = b.nick + b.amount;
+                if(!knownBets.has(bId)) {
+                    const div = document.createElement('div');
+                    div.className = `bet-card`;
+                    div.id = `bet-${bId}`;
+                    div.innerHTML = `<img src="${b.ava}" class="u-ava"><div style="flex:1"><b>${b.nick}</b></div><div style="display:flex; align-items:center; gap:4px; color:#34c759; font-weight:900;"><img src="https://files.catbox.moe/p3i6o2.jpeg" class="ton-ico"> ${b.amount}</div><div class="win-x" style="font-weight:900; color:var(--blue); min-width:55px; text-align:right;">${multiplier.toFixed(2)}x</div>`;
+                    bList.appendChild(div);
+                    knownBets.add(bId);
+                } else {
+                    const el = document.getElementById(`bet-${bId}`);
+                    if(el) { if(b.cashedOut) el.classList.add('won'); el.querySelector('.win-x').innerText = (b.cashedOut ? b.winX : multiplier.toFixed(2)) + "x"; }
+                }
+            });
         }
-        
-        let hHTML = (gameState === "fly") ? `<div class="h-item live">${multiplier.toFixed(2)}x</div>` : "";
-        hHTML += historyX.slice(-8).reverse().map(x => `<div class="h-item">${x}x</div>`).join('');
-        document.getElementById('history-line').innerHTML = hHTML;
     });
 
     function cashOut() {
-        if(gameState === "fly" && !isCashed && currentBet > 0) {
-            const finalX = multiplier;
-            const win = currentBet * finalX;
-            userData.balance += win;
-            userData.xp += 35;
-            isCashed = true;
-
-            // ВІДПРАВКА СЕРВЕРУ ЩОБ УСІ БАЧИЛИ
-            socket.emit('cashOut', { 
-                nick: tg.initDataUnsafe?.user?.first_name || "User", 
-                winX: finalX.toFixed(2),
-                winSum: win.toFixed(2)
-            });
-
-            while(userData.xp >= userData.next) {
-                userData.xp -= userData.next; userData.lvl++; userData.next *= 1.6;
-                tg.HapticFeedback.notificationOccurred('success');
-            }
-            save();
-            confetti({ particleCount: 150, spread: 60, origin: { y: 0.7 } });
+        if(gameState === 'fly' && !isCashed && currentBet > 0) {
+            userData.balance += (currentBet * multiplier); userData.xp += 25; isCashed = true;
+            socket.emit('cashOut', { nick: tg.initDataUnsafe?.user?.first_name || "User", winX: multiplier.toFixed(2) });
+            while(userData.xp >= userData.next) { userData.xp -= userData.next; userData.lvl++; userData.next *= 1.8; }
+            save(); confetti({ particleCount: 100, spread: 70, origin: { y: 0.8 } });
             document.getElementById('cash-btn').style.display = 'none';
             document.getElementById('bet-btn').style.display = 'block';
-            document.getElementById('bet-btn').innerText = "ВИГРАНО!";
+            document.getElementById('bet-btn').innerText = i18n[curL].win;
         }
     }
 
     function confirmBet() {
-        const val = parseFloat(document.getElementById('betInput').value);
-        if(val > 0 && val <= userData.balance) {
-            userData.balance -= val;
-            if(gameState === "wait") { currentBet = val; sendBet(); }
-            else { nextBet = val; document.getElementById('bet-btn').innerText = "У ЧЕРЗІ..."; }
+        const v = parseFloat(document.getElementById('betInput').value);
+        if(v > 0 && v <= userData.balance) {
+            userData.balance -= v;
+            if(gameState === 'wait') { currentBet = v; sendBet(); } else { nextBet = v; document.getElementById('bet-btn').innerText = i18n[curL].next; }
             save(); closeModal('betModal');
-        } else tg.showAlert("Недостатньо TON!");
+        } else tg.showAlert("Low Balance!");
     }
 
     function sendBet() {
-        socket.emit('placeBet', { 
-            nick: tg.initDataUnsafe?.user?.first_name || "User", 
-            ava: tg.initDataUnsafe?.user?.photo_url || "https://files.catbox.moe/ykuewj.png", 
-            amount: currentBet.toFixed(2) 
-        });
+        socket.emit('placeBet', { nick: tg.initDataUnsafe?.user?.first_name || "User", ava: tg.initDataUnsafe?.user?.photo_url || "https://files.catbox.moe/ykuewj.png", amount: currentBet.toFixed(2) });
     }
 
     function save() {
-        localStorage.setItem(DB_KEY, JSON.stringify(userData));
-        localStorage.setItem(`hist_${TG_ID}`, JSON.stringify(historyX));
+        localStorage.setItem(`rocket_v18_${tg.initDataUnsafe?.user?.id || '1471307057'}`, JSON.stringify(userData));
         document.getElementById('bal-val').innerText = userData.balance.toFixed(2);
         document.getElementById('p-lvl-text').innerText = "LVL " + userData.lvl;
-        document.getElementById('p-nick').innerText = tg.initDataUnsafe?.user?.first_name || "User";
         document.getElementById('xp-fill').style.width = (userData.xp / userData.next * 100) + "%";
-        document.getElementById('xp-stats').innerText = `${Math.floor(userData.xp)} / ${Math.floor(userData.next)} XP`;
+        document.getElementById('xp-stats').innerText = `XP: ${Math.floor(userData.xp)} / ${Math.floor(userData.next)}`;
+        document.getElementById('rocket-vid').src = userData.currentSkin;
+        document.getElementById('p-nick').innerText = tg.initDataUnsafe?.user?.first_name || "User";
         if(tg.initDataUnsafe?.user?.photo_url) document.getElementById('p-ava').src = tg.initDataUnsafe.user.photo_url;
     }
 
+    // ЛОГІКА ЗАВАНТАЖЕННЯ
+    window.onload = () => {
+        let bar = document.getElementById('load-bar');
+        let prg = 0;
+        let int = setInterval(() => {
+            prg += Math.random() * 15;
+            if(prg >= 100) {
+                prg = 100; clearInterval(int);
+                setTimeout(() => {
+                    document.getElementById('loading-screen').style.opacity = '0';
+                    setTimeout(() => document.getElementById('loading-screen').style.display = 'none', 600);
+                }, 500);
+            }
+            bar.style.width = prg + '%';
+        }, 100);
+    };
+
+    function openModal(id) { 
+        if(id==='rewardsModal') renderSkins();
+        const m = document.getElementById(id); m.style.display = 'flex';
+        setTimeout(() => m.classList.add('open'), 10);
+    }
+    function closeModal(id) { document.getElementById(id).classList.remove('open'); setTimeout(() => document.getElementById(id).style.display = 'none', 300); }
+    function tab(p, el) { 
+        document.querySelectorAll('.page').forEach(pg => pg.style.display = 'none'); 
+        document.getElementById(p).style.display = 'block'; 
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); 
+        el.classList.add('active'); 
+    }
+
+    const skins = [
+        { lvl: 1, src: 'https://files.catbox.moe/uisxbb.webp' }, { lvl: 2, src: 'https://files.catbox.moe/ihbd1g.webp' }, { lvl: 3, src: 'https://files.catbox.moe/g4b9nw.webp' },
+        { lvl: 4, src: 'https://files.catbox.moe/wpou7x.webp' }, { lvl: 5, src: 'https://files.catbox.moe/lfmkll.webp' }, { lvl: 6, src: 'https://files.catbox.moe/dw3dzi.webp' },
+        { lvl: 7, src: 'https://files.catbox.moe/i394wj.webp' }, { lvl: 8, src: 'https://files.catbox.moe/hqq8nz.webp' }, { lvl: 9, src: 'https://files.catbox.moe/lgii3d.webp' },
+        { lvl: 10, src: 'https://files.catbox.moe/3exu7k.webp' }, { lvl: 11, src: 'https://files.catbox.moe/2f1t69.webp' }, { lvl: 12, src: 'https://files.catbox.moe/75jth1.webp' },
+        { lvl: 13, src: 'https://files.catbox.moe/wrpp2h.webp' }, { lvl: 14, src: 'https://files.catbox.moe/fnrokc.webp' }, { lvl: 15, src: 'https://files.catbox.moe/h9mww2.webp' }
+    ];
+
     function renderSkins() {
-        document.getElementById('skins-grid').innerHTML = skins.map(s => {
-            const l = userData.lvl < s.lvl;
-            return `<div class="skin-item" style="opacity:${l?0.5:1}" onclick="${!l?`setSkin('${s.src}')`:`tg.showAlert('Потрібен ${s.lvl} рівень')`}">
-                <video width="60" autoplay loop muted playsinline style="border-radius:10px;"><source src="${s.src}"></video>
-                <div style="flex:1; margin-left:12px;"><b>${s.name}</b><br><small>${l?'🔒 Закрито':'🔓 Відкрито'}</small></div>
-            </div>`;
-        }).join('');
+        document.getElementById('skins-grid').innerHTML = skins.map(s => `<div style="background:#262628; padding:10px; border-radius:12px; text-align:center; opacity:${userData.lvl<s.lvl?0.3:1}" onclick="if(${userData.lvl>=s.lvl}){userData.currentSkin='${s.src}';save();closeModal('rewardsModal');}"><img src="${s.src}" style="width:45px; height:45px; object-fit:contain;"><br><span style="font-size:10px;">Lvl ${s.lvl}</span></div>`).join('');
     }
-
-    function setSkin(src) { document.getElementById('rocket-src').src = src; document.getElementById('rocket-vid').load(); closeModal('rewardsModal'); }
-    function tab(p, el) {
-        document.querySelectorAll('.page').forEach(pg => pg.style.display = 'none');
-        document.getElementById(p).style.display = 'block';
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        el.classList.add('active');
-        if(p === 'page-profile') {
-            document.getElementById('xp-fill').style.width = "0%";
-            setTimeout(save, 50);
-        }
-    }
-
-    function switchDep(t) {
-        document.getElementById('t-wal').className = t==='wallet'?'dep-tab active':'dep-tab';
-        document.getElementById('t-cry').className = t==='crypto'?'dep-tab active':'dep-tab';
-        document.getElementById('wal-area').style.display = t==='wallet'?'block':'none';
-        document.getElementById('cry-area').style.display = t==='crypto'?'block':'none';
-    }
-
-    async function connectTon() {
-        const link = connector.connect({ bridgeUrl: 'https://bridge.tonapi.io/bridge', universalLink: 'https://t.me/wallet?attach=wallet' });
-        tg.openLink(link);
-    }
-
-    function openModal(id) { document.getElementById(id).style.display = 'flex'; if(id==='rewardsModal') renderSkins(); }
-    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
     tg.expand();
+    updateLanguage(userData.lang); // Завантажуємо збережену мову
     save();
 </script>
 </body>
