@@ -40,7 +40,7 @@
         .modal-content { width: 100%; background: #1c1c1e; border-radius: 25px 25px 0 0; padding: 25px; max-height: 80vh; overflow-y: auto; }
         .btn-main { background: var(--blue); border: none; border-radius: 16px; color: white; font-weight: 900; padding: 18px; width: 100%; font-size: 17px; }
         
-        .skin-item { display: flex; align-items: center; gap: 12px; background: #262628; padding: 12px; border-radius: 18px; margin-bottom: 10px; border: 1px solid #333; transition: 0.2s; }
+        .skin-item { display: flex; align-items: center; gap: 12px; background: #262628; padding: 12px; border-radius: 18px; margin-bottom: 10px; border: 1px solid #333; }
         .skin-item.locked { opacity: 0.5; filter: grayscale(1); }
     </style>
 </head>
@@ -120,12 +120,11 @@
     </div>
 
 <script>
-    // ПІДКЛЮЧЕННЯ ДО ТВОГО СЕРВЕРА
+    // ТВОЄ ПОСИЛАННЯ ВСТАВЛЕНО СЮДИ:
     const socket = io("https://rocket-multiplayer.onrender.com");
     const tg = window.Telegram.WebApp;
     tg.expand();
 
-    // ВСІ 9 СКІНІВ
     const allSkins = [
         { lvl: 1, src: 'https://files.catbox.moe/zwtvwd.mp4', name: 'Titan 1' },
         { lvl: 2, src: 'https://files.catbox.moe/gjd079.mp4', name: 'Neon X' },
@@ -138,42 +137,30 @@
         { lvl: 9, src: 'https://files.catbox.moe/npixkw.mp4', name: 'TON Elite' }
     ];
 
-    let userData = JSON.parse(localStorage.getItem('rocket_final_v1')) || { balance: 1.00, xp: 0, lvl: 1, nextLvl: 200 };
+    let userData = JSON.parse(localStorage.getItem('rocket_v1')) || { balance: 1.00, xp: 0, lvl: 1, nextLvl: 200 };
     let multiplier = 1.00, currentBet = 0, pendingBet = 0, isCashedOut = false;
     let gameState = "wait", activeSkin = allSkins[0].src, historyX = [];
 
-    function save() { localStorage.setItem('rocket_final_v1', JSON.stringify(userData)); updateUI(); }
+    function save() { localStorage.setItem('rocket_v1', JSON.stringify(userData)); updateUI(); }
 
-    // ЛОГІКА МУЛЬТИПЛЕЄРА (Отримання стану з Render)
     socket.on('gameUpdate', (data) => {
-        gameState = data.s;
-        multiplier = data.m;
-        
-        const rVid = document.getElementById('rocket-vid');
-        const tEl = document.getElementById('timer');
-        const lX = document.getElementById('live-multiplier');
+        gameState = data.s; multiplier = data.m;
+        const rVid = document.getElementById('rocket-vid'), tEl = document.getElementById('timer'), lX = document.getElementById('live-multiplier');
 
         if (gameState === "wait") {
-            tEl.innerText = data.t + "s";
-            rVid.style.display = 'none'; lX.style.display = 'none';
-            
+            tEl.innerText = data.t + "s"; rVid.style.display = 'none'; lX.style.display = 'none';
             if (pendingBet > 0) { currentBet = pendingBet; pendingBet = 0; isCashedOut = false; }
-            
             if (currentBet > 0) {
                 document.getElementById('bet-tab').style.display = 'flex';
                 document.getElementById('tab-x').innerText = "WAITING...";
                 document.getElementById('bet-tab').classList.remove('won');
                 document.getElementById('tab-win-box').style.display = 'none';
-            } else {
-                document.getElementById('bet-tab').style.display = 'none';
-            }
-            document.getElementById('bet-btn').style.display = 'block';
-            document.getElementById('cash-btn').style.display = 'none';
+            } else { document.getElementById('bet-tab').style.display = 'none'; }
+            document.getElementById('bet-btn').style.display = 'block'; document.getElementById('cash-btn').style.display = 'none';
         } 
         else if (gameState === "fly") {
             tEl.innerText = ""; rVid.style.display = 'block'; lX.style.display = 'block';
             lX.innerText = multiplier.toFixed(2) + "x";
-            
             if (currentBet > 0 && !isCashedOut) {
                 document.getElementById('bet-btn').style.display = 'none';
                 document.getElementById('cash-btn').style.display = 'block';
@@ -187,8 +174,7 @@
                 historyX.push(multiplier.toFixed(2));
                 document.getElementById('history-line').innerHTML = historyX.slice(-10).reverse().map(x => `<div class="h-item">${x}x</div>`).join('');
             }
-            tEl.innerText = "💥 " + multiplier.toFixed(2) + "x";
-            rVid.style.display = 'none';
+            tEl.innerText = "💥 " + multiplier.toFixed(2) + "x"; rVid.style.display = 'none';
             document.getElementById('cash-btn').style.display = 'none';
             if (!isCashedOut) currentBet = 0;
         }
@@ -208,21 +194,15 @@
     function cashOut() {
         if(gameState === "fly" && !isCashedOut && currentBet > 0) {
             const win = currentBet * multiplier;
-            userData.balance += win;
-            userData.xp += 15;
-            if(userData.xp >= userData.nextLvl) {
-                userData.lvl++; userData.xp = 0; userData.nextLvl = Math.floor(userData.nextLvl * 1.8);
-            }
-            isCashedOut = true;
-            save();
+            userData.balance += win; userData.xp += 15;
+            if(userData.xp >= userData.nextLvl) { userData.lvl++; userData.xp = 0; userData.nextLvl *= 1.8; }
+            isCashedOut = true; save();
             document.getElementById('bet-tab').classList.add('won');
             document.getElementById('tab-win-box').style.display = 'flex';
-            document.getElementById('tab-win').innerText = win.toFixed(2);
             document.getElementById('cash-btn').style.display = 'none';
         }
     }
 
-    // ГАРАЖ З ІКОНКАМИ ЗАМКА
     function renderSkins() {
         document.getElementById('skins-grid').innerHTML = allSkins.map(s => {
             const isLocked = userData.lvl < s.lvl;
