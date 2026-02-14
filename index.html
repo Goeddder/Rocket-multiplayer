@@ -16,15 +16,13 @@
         .btn-main { background: var(--blue); border: none; border-radius: 16px; color: white; font-weight: 900; padding: 18px; width: 100%; font-size: 17px; cursor: pointer; transition: transform 0.1s ease; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-main:active { transform: scale(0.95); }
 
-        /* LOADING */
-        #loading-screen { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.6s ease; }
-        .load-rocket { width: 140px; margin-bottom: 25px; animation: float 2s infinite ease-in-out; }
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-        .load-bar-outer { width: 65%; height: 4px; background: #1c1c1e; border-radius: 10px; overflow: hidden; }
-        .load-bar-inner { width: 0%; height: 100%; background: var(--blue); box-shadow: 0 0 15px var(--blue); transition: width 0.3s ease; }
-        #load-status { margin-top: 15px; font-size: 10px; color: #8e8e93; letter-spacing: 1px; text-transform: uppercase; }
+        /* FAST LOADING */
+        #loading-screen { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.3s ease; }
+        .load-rocket { width: 120px; margin-bottom: 20px; }
+        .load-bar-outer { width: 60%; height: 4px; background: #1c1c1e; border-radius: 10px; overflow: hidden; }
+        .load-bar-inner { width: 0%; height: 100%; background: var(--blue); box-shadow: 0 0 10px var(--blue); transition: width 0.1s linear; }
 
-        /* UI ELEMENTS */
+        /* UI */
         .header-ui { position: absolute; top: 0; width: 100%; height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; z-index: 1000; }
         .top-balance { background: rgba(22, 22, 24, 0.8); padding: 8px 12px; border-radius: 12px; display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); backdrop-filter: blur(10px); }
         .ton-ico { width: 16px; height: 16px; border-radius: 50%; }
@@ -38,7 +36,7 @@
 
         .video-box { width: 100%; height: 35vh; min-height: 250px; position: relative; background: #000; overflow: hidden; }
         #bg-vid { width: 100%; height: 100%; object-fit: cover; }
-        #rocket-vid { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 150px; z-index: 2; display: none; }
+        #rocket-vid { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 140px; z-index: 2; display: none; }
 
         #bets-list { padding: 0 15px; margin-top: 10px; transition: opacity 0.3s ease; }
         .bet-card { background: var(--panel); border-radius: 14px; padding: 8px 12px; margin-bottom: 6px; border: 1px solid var(--border); display: flex; align-items: center; gap: 10px; animation: betIn 0.3s ease-out forwards; }
@@ -69,7 +67,6 @@
     <div id="loading-screen">
         <img src="https://files.catbox.moe/h9mww2.webp" class="load-rocket">
         <div class="load-bar-outer"><div id="load-bar" class="load-bar-inner"></div></div>
-        <div id="load-status">Завантаження ресурсів...</div>
     </div>
 
     <div class="header-ui">
@@ -139,44 +136,54 @@
 
 <script>
     const i18n = {
-        uk: { bet: "СТАВКА", next: "У ЧЕРЗІ", win: "ВИГРАНО!", load: "Завантаження...", game: "ГРА", prof: "ПРОФІЛЬ", dep: "ДЕПОЗИТ", gar: "ГАРАЖ", confirm: "ПІДТВЕРДИТИ", cash: "ЗАБРАТИ", balance: "Баланс" },
-        en: { bet: "BET", next: "IN QUEUE", win: "WON!", load: "Loading...", game: "GAME", prof: "PROFILE", dep: "DEPOSIT", gar: "GARAGE", confirm: "CONFIRM", cash: "CASH OUT", balance: "Balance" },
-        ru: { bet: "СТАВКА", next: "В ОЧЕРЕДИ", win: "ВЫИГРАНО!", load: "Загрузка...", game: "ИГРА", prof: "ПРОФИЛЬ", dep: "ДЕПОЗИТ", gar: "ГАРАЖ", confirm: "ПОДТВЕРДИТЬ", cash: "ЗАБРАТЬ", balance: "Баланс" }
+        uk: { bet: "СТАВКА", next: "У ЧЕРЗІ", win: "ВИГРАНО!", game: "ГРА", prof: "ПРОФІЛЬ", dep: "ДЕПОЗИТ", gar: "ГАРАЖ", confirm: "ПІДТВЕРДИТИ" },
+        en: { bet: "BET", next: "IN QUEUE", win: "WON!", game: "GAME", prof: "PROFILE", dep: "DEPOSIT", gar: "GARAGE", confirm: "CONFIRM" },
+        ru: { bet: "СТАВКА", next: "В ОЧЕРЕДИ", win: "ВЫИГРАНО!", game: "ИГРА", prof: "ПРОФИЛЬ", dep: "ДЕПОЗИТ", gar: "ГАРАЖ", confirm: "ПОДТВЕРДИТЬ" }
     };
+
+    const skins = [
+        { lvl: 1, icon: 'https://files.catbox.moe/nqy840.png', video: 'https://files.catbox.moe/uisxbb.webp' },
+        { lvl: 2, icon: 'https://files.catbox.moe/e6d9dg.png', video: 'https://files.catbox.moe/ihbd1g.webp' },
+        { lvl: 3, icon: 'https://files.catbox.moe/h6dkow.png', video: 'https://files.catbox.moe/g4b9nw.webp' },
+        { lvl: 4, icon: 'https://files.catbox.moe/g6n39c.png', video: 'https://files.catbox.moe/wpou7x.webp' },
+        { lvl: 5, icon: 'https://files.catbox.moe/1ikjer.png', video: 'https://files.catbox.moe/lfmkll.webp' },
+        { lvl: 6, icon: 'https://files.catbox.moe/539v08.png', video: 'https://files.catbox.moe/dw3dzi.webp' },
+        { lvl: 7, icon: 'https://files.catbox.moe/d71ljp.png', video: 'https://files.catbox.moe/i394wj.webp' },
+        { lvl: 8, icon: 'https://files.catbox.moe/uthui2.png', video: 'https://files.catbox.moe/hqq8nz.webp' },
+        { lvl: 9, icon: 'https://files.catbox.moe/jrngxd.png', video: 'https://files.catbox.moe/lgii3d.webp' },
+        { lvl: 10, icon: 'https://files.catbox.moe/p2kz02.png', video: 'https://files.catbox.moe/3exu7k.webp' },
+        { lvl: 11, icon: 'https://files.catbox.moe/nqwqts.png', video: 'https://files.catbox.moe/2f1t69.webp' },
+        { lvl: 12, icon: 'https://files.catbox.moe/0uf4bv.png', video: 'https://files.catbox.moe/75jth1.webp' },
+        { lvl: 13, icon: 'https://files.catbox.moe/wq2g0b.png', video: 'https://files.catbox.moe/wrpp2h.webp' },
+        { lvl: 14, icon: 'https://files.catbox.moe/ri1crb.png', video: 'https://files.catbox.moe/fnrokc.webp' },
+        { lvl: 15, icon: 'https://files.catbox.moe/u54z3p.png', video: 'https://files.catbox.moe/h9mww2.webp' }
+    ];
     
     let curL = 'uk';
     const tg = window.Telegram.WebApp;
     const socket = io("https://rocket-multiplayer.onrender.com");
     
-    let userData = JSON.parse(localStorage.getItem(`rocket_v18_${tg.initDataUnsafe?.user?.id || '1471307057'}`)) || { balance: 10.00, xp: 0, lvl: 1, next: 200, currentSkin: 'https://files.catbox.moe/uisxbb.webp', lang: 'uk' };
+    let userData = JSON.parse(localStorage.getItem(`rocket_v20`)) || { balance: 10.00, xp: 0, lvl: 1, next: 200, currentSkin: 'https://files.catbox.moe/uisxbb.webp', lang: 'uk' };
     let currentBet = 0, nextBet = 0, multiplier = 1.00, gameState = "wait", isCashed = false, historyX = [], knownBets = new Set();
 
     function updateLanguage(lang, el) {
-        curL = lang;
-        userData.lang = lang;
-        if(el) {
-            document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
-            el.classList.add('active');
-        }
+        curL = lang; userData.lang = lang;
+        if(el) { document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active')); el.classList.add('active'); }
         document.getElementById('txt-nav-game').innerText = i18n[lang].game;
         document.getElementById('txt-nav-prof').innerText = i18n[lang].prof;
         document.getElementById('txt-dep').innerText = i18n[lang].dep;
         document.getElementById('txt-gar').innerText = i18n[lang].gar;
         document.getElementById('txt-confirm').innerText = i18n[lang].confirm;
         document.getElementById('txt-garage-title').innerText = "🚀 " + i18n[lang].gar;
-        document.getElementById('load-status').innerText = i18n[lang].load;
-        
-        // Оновлюємо кнопки в реальному часі
         if(gameState === 'wait') document.getElementById('bet-btn').innerText = currentBet > 0 ? "OK" : i18n[curL].bet;
-        if(nextBet > 0) document.getElementById('bet-btn').innerText = i18n[curL].next;
         save();
     }
 
     socket.on('gameUpdate', (data) => {
         gameState = data.s; multiplier = data.m;
-        const r = document.getElementById('rocket-vid');
         const bList = document.getElementById('bets-list');
         const hLine = document.getElementById('history-line');
+        const r = document.getElementById('rocket-vid');
 
         let liveVal = gameState === 'wait' ? data.t + "s" : multiplier.toFixed(2) + "x";
         hLine.innerHTML = `<div class="h-item live">${liveVal}</div>` + historyX.map(x => `<div class="h-item">${x}</div>`).join('');
@@ -212,11 +219,9 @@
                 const bId = b.nick + b.amount;
                 if(!knownBets.has(bId)) {
                     const div = document.createElement('div');
-                    div.className = `bet-card`;
-                    div.id = `bet-${bId}`;
+                    div.className = `bet-card`; div.id = `bet-${bId}`;
                     div.innerHTML = `<img src="${b.ava}" class="u-ava"><div style="flex:1"><b>${b.nick}</b></div><div style="display:flex; align-items:center; gap:4px; color:#34c759; font-weight:900;"><img src="https://files.catbox.moe/p3i6o2.jpeg" class="ton-ico"> ${b.amount}</div><div class="win-x" style="font-weight:900; color:var(--blue); min-width:55px; text-align:right;">${multiplier.toFixed(2)}x</div>`;
-                    bList.appendChild(div);
-                    knownBets.add(bId);
+                    bList.appendChild(div); knownBets.add(bId);
                 } else {
                     const el = document.getElementById(`bet-${bId}`);
                     if(el) { if(b.cashedOut) el.classList.add('won'); el.querySelector('.win-x').innerText = (b.cashedOut ? b.winX : multiplier.toFixed(2)) + "x"; }
@@ -251,7 +256,7 @@
     }
 
     function save() {
-        localStorage.setItem(`rocket_v18_${tg.initDataUnsafe?.user?.id || '1471307057'}`, JSON.stringify(userData));
+        localStorage.setItem(`rocket_v20`, JSON.stringify(userData));
         document.getElementById('bal-val').innerText = userData.balance.toFixed(2);
         document.getElementById('p-lvl-text').innerText = "LVL " + userData.lvl;
         document.getElementById('xp-fill').style.width = (userData.xp / userData.next * 100) + "%";
@@ -261,50 +266,31 @@
         if(tg.initDataUnsafe?.user?.photo_url) document.getElementById('p-ava').src = tg.initDataUnsafe.user.photo_url;
     }
 
-    // ЛОГІКА ЗАВАНТАЖЕННЯ
-    window.onload = () => {
-        let bar = document.getElementById('load-bar');
-        let prg = 0;
+    (function fastLoad() {
+        let bar = document.getElementById('load-bar'); let prg = 0;
         let int = setInterval(() => {
-            prg += Math.random() * 15;
-            if(prg >= 100) {
-                prg = 100; clearInterval(int);
-                setTimeout(() => {
-                    document.getElementById('loading-screen').style.opacity = '0';
-                    setTimeout(() => document.getElementById('loading-screen').style.display = 'none', 600);
-                }, 500);
-            }
+            prg += 10;
+            if(prg >= 100) { clearInterval(int); setTimeout(() => { document.getElementById('loading-screen').style.opacity = '0'; setTimeout(() => document.getElementById('loading-screen').style.display = 'none', 300); }, 100); }
             bar.style.width = prg + '%';
-        }, 100);
-    };
+        }, 40);
+    })();
 
-    function openModal(id) { 
-        if(id==='rewardsModal') renderSkins();
-        const m = document.getElementById(id); m.style.display = 'flex';
-        setTimeout(() => m.classList.add('open'), 10);
-    }
+    function openModal(id) { if(id==='rewardsModal') renderSkins(); const m = document.getElementById(id); m.style.display = 'flex'; setTimeout(() => m.classList.add('open'), 10); }
     function closeModal(id) { document.getElementById(id).classList.remove('open'); setTimeout(() => document.getElementById(id).style.display = 'none', 300); }
-    function tab(p, el) { 
-        document.querySelectorAll('.page').forEach(pg => pg.style.display = 'none'); 
-        document.getElementById(p).style.display = 'block'; 
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); 
-        el.classList.add('active'); 
-    }
-
-    const skins = [
-        { lvl: 1, src: 'https://files.catbox.moe/uisxbb.webp' }, { lvl: 2, src: 'https://files.catbox.moe/ihbd1g.webp' }, { lvl: 3, src: 'https://files.catbox.moe/g4b9nw.webp' },
-        { lvl: 4, src: 'https://files.catbox.moe/wpou7x.webp' }, { lvl: 5, src: 'https://files.catbox.moe/lfmkll.webp' }, { lvl: 6, src: 'https://files.catbox.moe/dw3dzi.webp' },
-        { lvl: 7, src: 'https://files.catbox.moe/i394wj.webp' }, { lvl: 8, src: 'https://files.catbox.moe/hqq8nz.webp' }, { lvl: 9, src: 'https://files.catbox.moe/lgii3d.webp' },
-        { lvl: 10, src: 'https://files.catbox.moe/3exu7k.webp' }, { lvl: 11, src: 'https://files.catbox.moe/2f1t69.webp' }, { lvl: 12, src: 'https://files.catbox.moe/75jth1.webp' },
-        { lvl: 13, src: 'https://files.catbox.moe/wrpp2h.webp' }, { lvl: 14, src: 'https://files.catbox.moe/fnrokc.webp' }, { lvl: 15, src: 'https://files.catbox.moe/h9mww2.webp' }
-    ];
+    function tab(p, el) { document.querySelectorAll('.page').forEach(pg => pg.style.display = 'none'); document.getElementById(p).style.display = 'block'; document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); el.classList.add('active'); }
 
     function renderSkins() {
-        document.getElementById('skins-grid').innerHTML = skins.map(s => `<div style="background:#262628; padding:10px; border-radius:12px; text-align:center; opacity:${userData.lvl<s.lvl?0.3:1}" onclick="if(${userData.lvl>=s.lvl}){userData.currentSkin='${s.src}';save();closeModal('rewardsModal');}"><img src="${s.src}" style="width:45px; height:45px; object-fit:contain;"><br><span style="font-size:10px;">Lvl ${s.lvl}</span></div>`).join('');
+        document.getElementById('skins-grid').innerHTML = skins.map(s => `
+            <div style="background:#262628; padding:10px; border-radius:12px; text-align:center; opacity:${userData.lvl < s.lvl ? 0.3 : 1}; border: ${userData.currentSkin === s.video ? '2px solid var(--blue)' : '2px solid transparent'}" 
+                 onclick="if(${userData.lvl >= s.lvl}){userData.currentSkin='${s.video}';save();renderSkins();}">
+                <img src="${s.icon}" style="width:50px; height:50px; object-fit:contain;"><br>
+                <span style="font-size:10px;">Lvl ${s.lvl}</span>
+            </div>
+        `).join('');
     }
 
     tg.expand();
-    updateLanguage(userData.lang); // Завантажуємо збережену мову
+    updateLanguage(userData.lang);
     save();
 </script>
 </body>
