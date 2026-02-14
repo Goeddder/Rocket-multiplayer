@@ -12,20 +12,21 @@
         body { background: var(--bg); color: white; font-family: -apple-system, sans-serif; margin: 0; overflow: hidden; }
 
         .header-ui { position: fixed; top: 0; left: 0; width: 100%; height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; z-index: 1000; }
-        .top-balance { background: rgba(255,255,255,0.07); padding: 8px 12px; border-radius: 12px; display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); }
+        .top-balance { background: rgba(255,255,255,0.07); padding: 8px 12px; border-radius: 12px; display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); backdrop-filter: blur(10px); }
         .ton-ico-clean { width: 18px; height: 18px; border-radius: 50%; object-fit: cover; }
-        #live-multiplier { font-size: 32px; font-weight: 900; color: white; display: none; }
 
-        .history-bar { height: 45px; display: flex; align-items: center; gap: 8px; padding: 0 15px; overflow-x: auto; margin-top: 60px; border-bottom: 1px solid var(--border); }
+        .history-bar { height: 45px; display: flex; align-items: center; gap: 8px; padding: 0 15px; margin-top: 60px; border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; }
         .h-item { background: #1c1c1e; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 900; color: #34c759; border: 1px solid var(--border); flex-shrink: 0; }
+        .h-item.live { background: rgba(52, 199, 89, 0.2); border-color: #34c759; color: #34c759; }
 
         .video-box { height: 35vh; width: 100%; position: relative; }
         #bg-vid { width: 100%; height: 100%; object-fit: cover; }
         #rocket-vid { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 160px; z-index: 2; display: none; }
         .gear-btn { position: absolute; bottom: 15px; right: 15px; z-index: 10; width: 32px; filter: drop-shadow(0 0 5px black); }
 
-        .bet-card { background: var(--panel); border-radius: 18px; padding: 12px 18px; margin: 15px; border: 1px solid var(--border); display: none; align-items: center; gap: 12px; }
-        .bet-card.won { border-color: #34c759; background: rgba(52, 199, 89, 0.05); }
+        #bets-list { padding: 0 15px; height: 30vh; overflow-y: auto; margin-top: 10px; }
+        .bet-card { background: var(--panel); border-radius: 18px; padding: 12px 15px; margin-bottom: 8px; border: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+        .bet-card.won { border-color: #34c759; background: rgba(52, 199, 89, 0.1); }
         .u-ava { width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--blue); object-fit: cover; }
 
         .nav { background: #161618; display: flex; justify-content: space-around; padding: 10px 0 25px; position: fixed; bottom: 0; width: 100%; border-top: 1px solid var(--border); }
@@ -36,23 +37,17 @@
         .xp-bar-outer { width: 100%; background: #2c2c2e; height: 10px; border-radius: 5px; margin: 15px 0; overflow: hidden; }
         .xp-bar-inner { background: var(--blue); height: 100%; width: 0%; transition: width 0.3s; }
 
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 2000; display: none; align-items: flex-end; }
-        .modal-content { width: 100%; background: #1c1c1e; border-radius: 25px 25px 0 0; padding: 25px; max-height: 80vh; overflow-y: auto; }
-        .btn-main { background: var(--blue); border: none; border-radius: 16px; color: white; font-weight: 900; padding: 18px; width: 100%; font-size: 17px; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); z-index: 2000; display: none; align-items: flex-end; }
+        .modal-content { width: 100%; background: #1c1c1e; border-radius: 25px 25px 0 0; padding: 25px; border-top: 1px solid var(--border); }
+        .input-wrapper { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 16px; margin-bottom: 20px; }
         
-        .skin-item { display: flex; align-items: center; gap: 12px; background: #262628; padding: 12px; border-radius: 18px; margin-bottom: 10px; border: 1px solid #333; }
-        .skin-item.locked { opacity: 0.5; filter: grayscale(1); }
+        .btn-main { background: var(--blue); border: none; border-radius: 16px; color: white; font-weight: 900; padding: 18px; width: 100%; font-size: 17px; }
     </style>
 </head>
 <body>
 
     <div class="header-ui">
-        <div class="top-balance">
-            <img src="https://files.catbox.moe/p3i6o2.jpeg" class="ton-ico-clean">
-            <span id="bal-val">1.00</span>
-        </div>
-        <div id="live-multiplier">1.00x</div>
-        <div style="width: 40px;"></div>
+        <div class="top-balance"><img src="https://files.catbox.moe/p3i6o2.jpeg" class="ton-ico-clean"><span id="bal-val">1.00</span></div>
     </div>
 
     <div id="page-game">
@@ -69,23 +64,7 @@
             <button class="btn-main" id="cash-btn" style="background:#248a3d; display:none;" onclick="cashOut()">ЗАБРАТИ</button>
         </div>
 
-        <div class="bet-card" id="bet-tab">
-            <img id="tab-ava" src="https://files.catbox.moe/ykuewj.png" class="u-ava">
-            <div style="flex:1;">
-                <div id="tab-nick" style="font-weight:900; font-size:14px;">User</div>
-                <div style="font-size:12px; color:#8e8e93; display:flex; align-items:center; gap:4px;">
-                    <img src="https://files.catbox.moe/p3i6o2.jpeg" class="ton-ico-clean" style="width:12px; height:12px;"> 
-                    <span id="tab-sum">0.00</span>
-                </div>
-            </div>
-            <div style="text-align:right;">
-                <div id="tab-x" style="color:var(--blue); font-weight:900; font-size:18px;">1.00x</div>
-                <div id="tab-win-box" style="color:#34c759; font-weight:900; font-size:13px; display:none; align-items:center; justify-content:flex-end; gap:3px;">
-                    + <img src="https://files.catbox.moe/p3i6o2.jpeg" class="ton-ico-clean" style="width:11px; height:11px;"> 
-                    <span id="tab-win">0.00</span>
-                </div>
-            </div>
-        </div>
+        <div id="bets-list"></div>
     </div>
 
     <div id="page-profile" style="display:none; padding:80px 20px;">
@@ -96,7 +75,7 @@
             <div class="xp-bar-outer"><div id="xp-fill" class="xp-bar-inner"></div></div>
             <div id="xp-stats" style="font-size:12px; color:#8e8e93; margin-bottom:20px;">XP: 0 / 200</div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                <button class="btn-main" style="padding:12px; font-size:14px;" onclick="tg.showAlert('Скоро!')">ДЕПОЗИТ</button>
+                <button class="btn-main" style="padding:12px; font-size:14px;" onclick="tg.showAlert('Незабаром!')">ДЕПОЗИТ</button>
                 <button class="btn-main" style="padding:12px; font-size:14px; background:var(--gold);" onclick="openModal('rewardsModal')">ГАРАЖ</button>
             </div>
         </div>
@@ -107,20 +86,24 @@
         <div class="nav-item" onclick="tab('page-profile', this)"><img src="https://files.catbox.moe/ykuewj.png"><span>ПРОФІЛЬ</span></div>
     </nav>
 
-    <div class="modal-overlay" id="rewardsModal" onclick="closeModal('rewardsModal')"><div class="modal-content" onclick="event.stopPropagation()"><h3 style="text-align:center;">🚀 ГАРАЖ</h3><div id="skins-grid"></div></div></div>
-    
     <div class="modal-overlay" id="betModal" onclick="closeModal('betModal')">
         <div class="modal-content" onclick="event.stopPropagation()">
-            <div style="display:flex; align-items:center; gap:10px; border-bottom:2px solid var(--blue); padding-bottom:10px; margin-bottom:20px;">
-                <img src="https://files.catbox.moe/p3i6o2.jpeg" class="ton-ico-clean" style="width:24px; height:24px;">
-                <input type="number" id="betInput" placeholder="0.10" style="background:none; border:none; color:white; font-size:32px; font-weight:900; width:100%;">
+            <div class="input-wrapper">
+                <img src="https://files.catbox.moe/p3i6o2.jpeg" style="width:24px; height:24px; border-radius:50%;">
+                <input type="number" id="betInput" placeholder="0.10" style="background:none; border:none; color:white; font-size:24px; width:100%;">
             </div>
-            <button class="btn-main" onclick="confirmBet()">ПОСТАВИТИ</button>
+            <button class="btn-main" onclick="confirmBet()">ПІДТВЕРДИТИ</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="rewardsModal" onclick="closeModal('rewardsModal')">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3 style="text-align:center; margin-bottom:20px;">🚀 ГАРАЖ</h3>
+            <div id="skins-grid" style="max-height:50vh; overflow-y:auto;"></div>
         </div>
     </div>
 
 <script>
-    // ТВОЄ ПОСИЛАННЯ ВСТАВЛЕНО СЮДИ:
     const socket = io("https://rocket-multiplayer.onrender.com");
     const tg = window.Telegram.WebApp;
     tg.expand();
@@ -137,105 +120,118 @@
         { lvl: 9, src: 'https://files.catbox.moe/npixkw.mp4', name: 'TON Elite' }
     ];
 
-    let userData = JSON.parse(localStorage.getItem('rocket_v1')) || { balance: 1.00, xp: 0, lvl: 1, nextLvl: 200 };
-    let multiplier = 1.00, currentBet = 0, pendingBet = 0, isCashedOut = false;
-    let gameState = "wait", activeSkin = allSkins[0].src, historyX = [];
+    let userData = JSON.parse(localStorage.getItem('rocket_v5')) || { balance: 10.00, xp: 0, lvl: 1, nextLvl: 200 };
+    let currentBet = 0, nextRoundBet = 0, isCashedOut = false, gameState = "wait", multiplier = 1.00, winX = 0;
+    let historyX = JSON.parse(localStorage.getItem('rocket_history')) || [];
 
-    function save() { localStorage.setItem('rocket_v1', JSON.stringify(userData)); updateUI(); }
+    function save() { localStorage.setItem('rocket_v5', JSON.stringify(userData)); localStorage.setItem('rocket_history', JSON.stringify(historyX)); updateUI(); }
 
     socket.on('gameUpdate', (data) => {
         gameState = data.s; multiplier = data.m;
-        const rVid = document.getElementById('rocket-vid'), tEl = document.getElementById('timer'), lX = document.getElementById('live-multiplier');
+        const tEl = document.getElementById('timer'), rVid = document.getElementById('rocket-vid');
 
         if (gameState === "wait") {
-            tEl.innerText = data.t + "s"; rVid.style.display = 'none'; lX.style.display = 'none';
-            if (pendingBet > 0) { currentBet = pendingBet; pendingBet = 0; isCashedOut = false; }
-            if (currentBet > 0) {
-                document.getElementById('bet-tab').style.display = 'flex';
-                document.getElementById('tab-x').innerText = "WAITING...";
-                document.getElementById('bet-tab').classList.remove('won');
-                document.getElementById('tab-win-box').style.display = 'none';
-            } else { document.getElementById('bet-tab').style.display = 'none'; }
-            document.getElementById('bet-btn').style.display = 'block'; document.getElementById('cash-btn').style.display = 'none';
+            tEl.innerText = data.t + "s"; rVid.style.display = 'none';
+            if (nextRoundBet > 0) {
+                currentBet = nextRoundBet; nextRoundBet = 0;
+                socket.emit('placeBet', { nick: tg.initDataUnsafe?.user?.first_name || "User", ava: tg.initDataUnsafe?.user?.photo_url || "https://files.catbox.moe/ykuewj.png", amount: currentBet.toFixed(2) });
+            }
+            if (currentBet === 0) document.getElementById('bet-btn').innerText = "СТАВКА";
+            document.getElementById('bet-btn').style.display = 'block'; 
+            document.getElementById('cash-btn').style.display = 'none';
+            isCashedOut = false; winX = 0;
         } 
         else if (gameState === "fly") {
-            tEl.innerText = ""; rVid.style.display = 'block'; lX.style.display = 'block';
-            lX.innerText = multiplier.toFixed(2) + "x";
+            tEl.innerText = ""; rVid.style.display = 'block';
             if (currentBet > 0 && !isCashedOut) {
-                document.getElementById('bet-btn').style.display = 'none';
-                document.getElementById('cash-btn').style.display = 'block';
-                document.getElementById('cash-btn').innerText = "ЗАБРАТИ " + (currentBet * multiplier).toFixed(2);
-                document.getElementById('tab-x').innerText = multiplier.toFixed(2) + "x";
-                document.getElementById('tab-win').innerText = (currentBet * multiplier).toFixed(2);
+                document.getElementById('cash-btn').style.display = 'block'; document.getElementById('bet-btn').style.display = 'none';
+                document.getElementById('cash-btn').innerHTML = `ЗАБРАТИ <img src="https://files.catbox.moe/p3i6o2.jpeg" style="width:18px; border-radius:50%; vertical-align:middle; margin-left:5px;"> ${(currentBet * multiplier).toFixed(2)}`;
             }
-        } 
+        }
         else if (gameState === "crash") {
-            if(rVid.style.display !== 'none') {
-                historyX.push(multiplier.toFixed(2));
-                document.getElementById('history-line').innerHTML = historyX.slice(-10).reverse().map(x => `<div class="h-item">${x}x</div>`).join('');
-            }
+            if(tEl.innerText.indexOf("💥") === -1) { historyX.push(multiplier.toFixed(2)); save(); }
             tEl.innerText = "💥 " + multiplier.toFixed(2) + "x"; rVid.style.display = 'none';
             document.getElementById('cash-btn').style.display = 'none';
-            if (!isCashedOut) currentBet = 0;
+            document.getElementById('bet-btn').style.display = 'block';
+            currentBet = 0;
+        }
+
+        let historyHTML = gameState === "fly" ? `<div class="h-item live">${multiplier.toFixed(2)}x</div>` : "";
+        historyHTML += historyX.slice(-8).reverse().map(x => `<div class="h-item">${x}x</div>`).join('');
+        document.getElementById('history-line').innerHTML = historyHTML;
+
+        if (data.bets) {
+            document.getElementById('bets-list').innerHTML = data.bets.map(b => {
+                const isMe = b.nick === (tg.initDataUnsafe?.user?.first_name || 'User');
+                const m = (isMe && isCashedOut) ? winX : multiplier;
+                return `
+                <div class="bet-card ${isMe && isCashedOut ? 'won' : ''}">
+                    <img src="${b.ava}" class="u-ava">
+                    <div style="flex:1;">
+                        <div style="font-weight:900; font-size:14px;">${b.nick}</div>
+                        <div style="font-size:12px; color:#34c759; font-weight:900; display:flex; align-items:center; gap:3px;">
+                            <img src="https://files.catbox.moe/p3i6o2.jpeg" class="ton-ico-clean" style="width:12px; height:12px;"> ${(b.amount * m).toFixed(2)}
+                        </div>
+                    </div>
+                    <div style="text-align:right; font-weight:900; color:var(--blue); font-size:20px;">${gameState === "wait" ? "WAIT" : m.toFixed(2) + "x"}</div>
+                </div>`;
+            }).join('');
         }
     });
 
     function confirmBet() {
         const val = parseFloat(document.getElementById('betInput').value);
-        if(val > 0 && val <= userData.balance) {
+        if (val > 0 && val <= userData.balance) {
             userData.balance -= val;
-            if(gameState === "wait") { currentBet = val; } else { pendingBet = val; }
+            if (gameState === "wait") {
+                currentBet = val;
+                socket.emit('placeBet', { nick: tg.initDataUnsafe?.user?.first_name || "User", ava: tg.initDataUnsafe?.user?.photo_url || "https://files.catbox.moe/ykuewj.png", amount: val.toFixed(2) });
+            } else {
+                nextRoundBet = val;
+                document.getElementById('bet-btn').innerText = "В ОЧІКУВАННІ...";
+            }
             save(); closeModal('betModal');
-            document.getElementById('tab-sum').innerText = val.toFixed(2);
-            document.getElementById('bet-tab').style.display = 'flex';
-        } else { tg.showAlert('Недостатньо TON!'); }
+        } else { tg.showAlert("Недостатньо TON!"); }
     }
 
     function cashOut() {
-        if(gameState === "fly" && !isCashedOut && currentBet > 0) {
-            const win = currentBet * multiplier;
-            userData.balance += win; userData.xp += 15;
+        if (gameState === "fly" && !isCashedOut && currentBet > 0) {
+            winX = multiplier;
+            userData.balance += currentBet * winX; userData.xp += 25;
             if(userData.xp >= userData.nextLvl) { userData.lvl++; userData.xp = 0; userData.nextLvl *= 1.8; }
-            isCashedOut = true; save();
-            document.getElementById('bet-tab').classList.add('won');
-            document.getElementById('tab-win-box').style.display = 'flex';
+            isCashedOut = true; 
             document.getElementById('cash-btn').style.display = 'none';
+            document.getElementById('bet-btn').style.display = 'block';
+            document.getElementById('bet-btn').innerText = "СТАВКА";
+            save();
         }
     }
 
     function renderSkins() {
         document.getElementById('skins-grid').innerHTML = allSkins.map(s => {
             const isLocked = userData.lvl < s.lvl;
-            const isActive = activeSkin === s.src;
-            return `
-            <div class="skin-item ${isLocked ? 'locked' : ''}" onclick="${!isLocked ? "setSkin('"+s.src+"')" : "tg.showAlert('Тобі потрібен "+s.lvl+" рівень!')"}">
-                <video width="60" autoplay loop muted playsinline style="border-radius:12px; background:#000;"><source src="${s.src}"></video>
-                <div style="flex:1; margin-left:12px;">
-                    <b style="color:${isLocked ? '#8e8e93' : 'white'}">${s.name}</b><br>
-                    <small style="color:${isLocked ? '#ff3b30' : '#34c759'}">${isLocked ? '🔒 Рівень ' + s.lvl : '🔓 Доступно'}</small>
-                </div>
-                <div style="font-size:18px;">${isLocked ? '🔒' : (isActive ? '✅' : '👆')}</div>
+            return `<div class="skin-item" style="display:flex; align-items:center; gap:12px; background:#262628; padding:12px; border-radius:18px; margin-bottom:10px; opacity:${isLocked?0.5:1}" onclick="${!isLocked?`setSkin('${s.src}')`:`tg.showAlert('Рівень ${s.lvl}!')`}">
+                <video width="60" autoplay loop muted playsinline style="border-radius:12px;"><source src="${s.src}"></video>
+                <div style="flex:1;"><b>${s.name}</b><br><small>${isLocked?'🔒 Lvl '+s.lvl:'🔓 OK'}</small></div>
             </div>`;
         }).join('');
     }
 
-    function setSkin(src) { activeSkin = src; document.getElementById('rocket-src').src = src; document.getElementById('rocket-vid').load(); closeModal('rewardsModal'); }
-
+    function setSkin(src) { document.getElementById('rocket-src').src = src; document.getElementById('rocket-vid').load(); closeModal('rewardsModal'); }
     function updateUI() {
         document.getElementById('bal-val').innerText = userData.balance.toFixed(2);
+        document.getElementById('p-nick').innerText = tg.initDataUnsafe?.user?.first_name || "User";
+        document.getElementById('p-ava').src = tg.initDataUnsafe?.user?.photo_url || "https://files.catbox.moe/ykuewj.png";
         document.getElementById('p-lvl-text').innerText = "LVL " + userData.lvl;
-        document.getElementById('xp-stats').innerText = `XP: ${Math.floor(userData.xp)} / ${Math.floor(userData.nextLvl)}`;
         document.getElementById('xp-fill').style.width = ((userData.xp / userData.nextLvl) * 100) + "%";
-        const u = tg.initDataUnsafe?.user;
-        if(u) { document.getElementById('p-nick').innerText = u.first_name; document.getElementById('tab-nick').innerText = u.first_name; }
+        document.getElementById('xp-stats').innerText = `XP: ${Math.floor(userData.xp)} / ${Math.floor(userData.nextLvl)}`;
     }
-
-    function tab(page, el) {
-        document.getElementById('page-game').style.display = (page === 'page-game' ? 'block' : 'none');
-        document.getElementById('page-profile').style.display = (page === 'page-profile' ? 'block' : 'none');
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); el.classList.add('active');
+    function tab(p, el) {
+        document.getElementById('page-game').style.display = (p === 'page-game' ? 'block' : 'none');
+        document.getElementById('page-profile').style.display = (p === 'page-profile' ? 'block' : 'none');
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active')); el.classList.add('active');
     }
-    function openModal(id) { document.getElementById(id).style.display = 'flex'; if(id === 'rewardsModal') renderSkins(); }
+    function openModal(id) { document.getElementById(id).style.display = 'flex'; if(id==='rewardsModal') renderSkins(); }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
     updateUI();
 </script>
