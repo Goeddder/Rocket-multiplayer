@@ -10,69 +10,66 @@
     <script src="https://unpkg.com/@tonconnect/sdk@latest/dist/tonconnect-sdk.min.js"></script>
     <style>
         :root { --bg: #000; --panel: #161618; --blue: #007aff; --gold: #b8860b; --border: rgba(255,255,255,0.1); }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; outline: none; }
         
         body, html { 
             background: var(--bg); color: white; font-family: -apple-system, sans-serif; 
             margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; position: fixed;
         }
 
-        /* Заглушка для не-ТГ користувачів */
-        #auth-blocker { 
-            position: fixed; inset: 0; background: #000; z-index: 9999; 
-            display: none; flex-direction: column; align-items: center; justify-content: center; 
-            text-align: center; padding: 20px;
-        }
-
+        /* Header */
         .header-ui { position: absolute; top: 0; width: 100%; height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; z-index: 1000; }
         .top-balance { background: rgba(22, 22, 24, 0.8); padding: 8px 12px; border-radius: 12px; display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); backdrop-filter: blur(10px); }
-        .ton-mini { width: 18px; height: 18px; border-radius: 50%; }
+        .ton-ico { width: 18px; height: 18px; border-radius: 50%; }
 
-        .page { position: absolute; inset: 0; padding-bottom: 80px; display: none; overflow-y: auto; }
+        /* Pages */
+        .page { position: absolute; inset: 0; padding-bottom: 100px; display: none; overflow-y: auto; -webkit-overflow-scrolling: touch; }
         .active-page { display: block; }
 
-        .history-bar { height: 45px; display: flex; align-items: center; gap: 8px; padding: 0 15px; margin-top: 60px; border-bottom: 1px solid var(--border); overflow-x: auto; }
+        /* Game UI */
+        .history-bar { height: 45px; display: flex; align-items: center; gap: 8px; padding: 0 15px; margin-top: 60px; border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; }
         .h-item { background: #1c1c1e; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 900; color: #34c759; border: 1px solid var(--border); flex-shrink: 0; }
+        .h-item.live { background: rgba(0, 122, 255, 0.2); color: var(--blue); border-color: var(--blue); }
 
-        .video-box { width: 100%; height: 35vh; position: relative; background: #000; overflow: hidden; }
+        .video-box { width: 100%; height: 35vh; min-height: 250px; position: relative; background: #000; overflow: hidden; }
         #bg-vid { width: 100%; height: 100%; object-fit: cover; }
-        #rocket-vid { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 130px; z-index: 2; display: none; }
-        #timer { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); font-size: 55px; font-weight: 900; color: var(--blue); z-index: 5; }
+        #rocket-vid { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 150px; z-index: 2; display: none; }
+        #timer { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); font-size: 55px; font-weight: 900; color: var(--blue); z-index: 5; text-shadow: 0 0 20px rgba(0,122,255,0.4); }
 
-        .gear-btn { position: absolute; bottom: 15px; right: 15px; z-index: 10; width: 34px; cursor: pointer; }
-
+        /* Bets */
         #bets-list { padding: 15px; }
-        .bet-card { background: var(--panel); border-radius: 18px; padding: 12px 15px; margin-bottom: 8px; border: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
-        .bet-card.won { border-color: #34c759; background: rgba(52, 199, 89, 0.1); }
-        .u-ava { width: 42px; height: 42px; border-radius: 50%; border: 2px solid var(--blue); object-fit: cover; }
+        .bet-card { background: var(--panel); border-radius: 18px; padding: 12px 15px; margin-bottom: 8px; border: 1px solid var(--border); display: flex; align-items: center; gap: 12px; transition: all 0.3s ease; }
+        .bet-card.won { border-color: #34c759; background: rgba(52, 199, 89, 0.12); transform: scale(1.02); }
+        .u-ava { width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--blue); object-fit: cover; }
 
-        .xp-container { padding: 20px; background: var(--panel); border-radius: 22px; border: 1px solid var(--border); margin: 0 15px; }
+        /* Profile & XP */
+        .xp-card { background: var(--panel); border-radius: 24px; padding: 20px; border: 1px solid var(--border); margin: 0 15px; }
         .xp-bar-outer { width: 100%; background: #2c2c2e; height: 12px; border-radius: 6px; margin: 12px 0; overflow: hidden; }
-        .xp-bar-inner { background: linear-gradient(90deg, #007aff, #00c6ff); height: 100%; width: 0%; transition: width 0.8s ease-out; }
+        .xp-bar-inner { background: linear-gradient(90deg, #007aff, #00c6ff); height: 100%; width: 0%; transition: width 0.8s cubic-bezier(0.17, 0.67, 0.83, 0.67); }
 
-        .nav { background: #161618; display: flex; justify-content: space-around; padding: 10px 0 25px; position: absolute; bottom: 0; width: 100%; border-top: 1px solid var(--border); z-index: 1000; }
+        /* Navigation */
+        .nav { background: #161618; display: flex; justify-content: space-around; padding: 10px 0 25px; position: fixed; bottom: 0; width: 100%; border-top: 1px solid var(--border); z-index: 1000; }
         .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #8e8e93; font-size: 10px; opacity: 0.6; }
         .nav-item.active { opacity: 1; color: white; }
+        .nav-item img { width: 26px; height: 26px; }
 
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); backdrop-filter: blur(8px); z-index: 2000; display: none; align-items: flex-end; }
+        /* Modals */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); z-index: 2000; display: none; align-items: flex-end; }
         .modal-content { width: 100%; background: #121212; border-radius: 30px 30px 0 0; padding: 25px 25px 40px; border-top: 1px solid var(--border); }
-        
         .btn-main { background: var(--blue); border: none; border-radius: 18px; color: white; font-weight: 900; padding: 18px; width: 100%; font-size: 17px; cursor: pointer; }
+        .dep-tabs { display: flex; background: #1c1c1e; padding: 4px; border-radius: 14px; margin-bottom: 20px; }
+        .dep-tab { flex: 1; text-align: center; padding: 12px; border-radius: 10px; color: #8e8e93; font-size: 14px; }
+        .dep-tab.active { background: var(--blue); color: white; }
+        
         .skin-item { display: flex; align-items: center; gap: 12px; background: #262628; padding: 12px; border-radius: 18px; margin-bottom: 10px; border: 1px solid #333; }
     </style>
 </head>
 <body>
 
-    <div id="auth-blocker">
-        <img src="https://files.catbox.moe/dtuawh.png" width="80" style="margin-bottom:20px;">
-        <h2>ДОСТУП ОБМЕЖЕНО</h2>
-        <p style="color:#8e8e93">Будь ласка, запустіть гру через офіційний Telegram бот.</p>
-    </div>
-
     <div class="header-ui">
         <div class="top-balance">
-            <img src="https://files.catbox.moe/p3i6o2.jpeg" class="ton-mini">
-            <span id="bal-val">0.00</span>
+            <img src="https://files.catbox.moe/p3i6o2.jpeg" class="ton-ico">
+            <span id="bal-val">10.00</span>
         </div>
     </div>
 
@@ -82,7 +79,7 @@
             <div id="timer"></div>
             <video id="bg-vid" autoplay loop muted playsinline><source src="https://files.catbox.moe/7xmbxz.mp4"></video>
             <video id="rocket-vid" autoplay loop muted playsinline><source id="rocket-src" src="https://files.catbox.moe/zwtvwd.mp4"></video>
-            <img src="https://files.catbox.moe/zbsdq6.png" class="gear-btn" onclick="openModal('rewardsModal')">
+            <img src="https://files.catbox.moe/zbsdq6.png" style="position:absolute; bottom:15px; right:15px; width:34px; z-index:10;" onclick="openModal('rewardsModal')">
         </div>
         <div style="padding:15px; display:flex; gap:10px;">
             <button class="btn-main" id="bet-btn" onclick="openModal('betModal')">СТАВКА</button>
@@ -92,19 +89,19 @@
     </div>
 
     <div id="page-profile" class="page">
-        <div style="padding:80px 15px 20px;">
-            <div style="text-align:center; margin-bottom:25px;">
-                <img id="p-ava" src="https://files.catbox.moe/ykuewj.png" style="width:90px; height:90px; border-radius:50%; border:3px solid var(--blue);">
-                <h2 id="p-nick" style="margin:10px 0 5px;">User</h2>
-                <span id="p-lvl-text" style="color:var(--blue); font-weight:900;">LVL 1</span>
+        <div style="padding:80px 0 20px;">
+            <div style="text-align:center; margin-bottom:30px;">
+                <img id="p-ava" src="https://files.catbox.moe/ykuewj.png" style="width:100px; height:100px; border-radius:50%; border:3px solid var(--blue); object-fit:cover;">
+                <h2 id="p-nick" style="margin:12px 0 5px;">User</h2>
+                <div id="p-lvl-text" style="color:var(--blue); font-weight:900;">LVL 1</div>
             </div>
-            <div class="xp-container">
+            <div class="xp-card">
                 <div style="display:flex; justify-content:space-between; font-size:12px; color:#8e8e93;">
-                    <span>Прогрес рівня</span>
+                    <span>До наступного рівня</span>
                     <span id="xp-stats">0 / 200 XP</span>
                 </div>
                 <div class="xp-bar-outer"><div id="xp-fill" class="xp-bar-inner"></div></div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:15px;">
                     <button class="btn-main" style="padding:12px; font-size:14px;" onclick="openModal('depositModal')">ДЕПОЗИТ</button>
                     <button class="btn-main" style="padding:12px; font-size:14px; background:var(--gold);" onclick="openModal('rewardsModal')">ГАРАЖ</button>
                 </div>
@@ -113,41 +110,54 @@
     </div>
 
     <nav class="nav">
-        <div class="nav-item active" onclick="tab('page-game', this)"><img src="https://files.catbox.moe/dtuawh.png" width="24"><span>ГРА</span></div>
-        <div class="nav-item" onclick="tab('page-profile', this)"><img src="https://files.catbox.moe/ykuewj.png" width="24"><span>ПРОФІЛЬ</span></div>
+        <div class="nav-item active" onclick="tab('page-game', this)"><img src="https://files.catbox.moe/dtuawh.png"><span>ГРА</span></div>
+        <div class="nav-item" onclick="tab('page-profile', this)"><img src="https://files.catbox.moe/ykuewj.png"><span>ПРОФІЛЬ</span></div>
     </nav>
 
-    <div class="modal-overlay" id="betModal" onclick="closeModal('betModal')"><div class="modal-content" onclick="event.stopPropagation()"><h3 style="margin:0 0 15px; text-align:center;">Сума ставки</h3><input type="number" id="betInput" placeholder="0.10" style="width:100%; background:#1c1c1e; border:1px solid #333; color:white; padding:20px; border-radius:18px; font-size:24px; margin-bottom:20px; text-align:center;"><button class="btn-main" onclick="confirmBet()">ПІДТВЕРДИТИ</button></div></div>
-    <div class="modal-overlay" id="rewardsModal" onclick="closeModal('rewardsModal')"><div class="modal-content" onclick="event.stopPropagation()"><h3 style="text-align:center; margin-bottom:20px;">🚀 ВАШІ КОРАБЛІ</h3><div id="skins-grid" style="max-height:50vh; overflow-y:auto;"></div></div></div>
-    <div class="modal-overlay" id="depositModal" onclick="closeModal('depositModal')"><div class="modal-content" onclick="event.stopPropagation()"><h3 style="text-align:center;">ДЕПОЗИТ</h3><p style="text-align:center; color:#8e8e93;">Твій Telegram ID: <b id="display-id">...</b></p><button class="btn-main" onclick="tg.showAlert('Платіжна система в розробці')">ОПЛАТИТИ TON</button></div></div>
+    <div class="modal-overlay" id="betModal" onclick="closeModal('betModal')">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3 style="text-align:center; margin:0 0 20px;">Сума ставки (TON)</h3>
+            <input type="number" id="betInput" placeholder="0.10" style="width:100%; background:#1c1c1e; border:1px solid #333; color:white; padding:20px; border-radius:18px; font-size:24px; text-align:center; margin-bottom:20px;">
+            <button class="btn-main" onclick="confirmBet()">ПІДТВЕРДИТИ</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="depositModal" onclick="closeModal('depositModal')">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="dep-tabs">
+                <div id="t-wal" class="dep-tab active" onclick="switchDep('wallet')">Wallet</div>
+                <div id="t-cry" class="dep-tab" onclick="switchDep('crypto')">CryptoBot</div>
+            </div>
+            <div id="wal-area" onclick="connectTon()" style="text-align:center; padding:30px; border:1px dashed #444; border-radius:20px;">
+                🔗 Приєднати TON гаманець
+            </div>
+            <div id="cry-area" style="display:none;">
+                <input type="number" id="cryAmt" value="1.0" style="width:100%; background:#1c1c1e; border:none; padding:15px; border-radius:12px; color:white; font-size:22px; text-align:center; margin-bottom:15px;">
+                <button class="btn-main" onclick="tg.showAlert('Функція CryptoBot підключається...')">Створити рахунок</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="rewardsModal" onclick="closeModal('rewardsModal')">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3 style="text-align:center; margin-bottom:20px;">🚀 ГАРАЖ</h3>
+            <div id="skins-grid" style="max-height:50vh; overflow-y:auto;"></div>
+        </div>
+    </div>
 
 <script>
-    const tg = window.Telegram.WebApp;
     const socket = io("https://rocket-multiplayer.onrender.com");
+    const tg = window.Telegram.WebApp;
+    const connector = new TonConnectSDK.TonConnect({ manifestUrl: 'https://raw.githubusercontent.com/ton-connect/demo-dapp/main/public/tonconnect-manifest.json' });
 
-    // ПЕРЕВІРКА РЕЄСТРАЦІЇ ЧЕРЕЗ ТЕЛЕГРАМ
-    const userRaw = tg.initDataUnsafe?.user;
-    if (!userRaw || !userRaw.id) {
-        document.getElementById('auth-blocker').style.display = 'flex';
-    }
-
-    const TG_ID = userRaw?.id || "guest";
-    const STORAGE_KEY = `rocket_v8_user_${TG_ID}`;
-
-    // Завантаження прогресу саме для цього ID
-    let userData = JSON.parse(localStorage.getItem(STORAGE_KEY)) || { 
-        balance: 10.00, 
-        xp: 0, 
-        lvl: 1, 
-        next: 200, 
-        lastWinX: 1.0,
-        id: TG_ID 
-    };
-
+    // РЕЄСТРАЦІЯ ЗА TG ID
+    const TG_ID = tg.initDataUnsafe?.user?.id || "1471307057";
+    const DB_KEY = `rocket_data_${TG_ID}`;
+    
+    let userData = JSON.parse(localStorage.getItem(DB_KEY)) || { balance: 10.00, xp: 0, lvl: 1, next: 200 };
     let currentBet = 0, nextBet = 0, multiplier = 1.00, gameState = "wait", isCashed = false;
     let historyX = JSON.parse(localStorage.getItem(`hist_${TG_ID}`)) || [];
 
-    const tonIcon = `<img src="https://files.catbox.moe/p3i6o2.jpeg" class="ton-mini" style="margin-right:4px;">`;
     const skins = [
         { lvl: 1, src: 'https://files.catbox.moe/zwtvwd.mp4', name: 'Titan I' },
         { lvl: 2, src: 'https://files.catbox.moe/gjd079.mp4', name: 'Neon X' },
@@ -168,8 +178,8 @@
             t.innerText = data.t + "s"; r.style.display = 'none';
             if(nextBet > 0) { currentBet = nextBet; nextBet = 0; sendBet(); }
             document.getElementById('bet-btn').innerText = currentBet > 0 ? "СТАВКА ПРИЙНЯТА" : "СТАВКА";
-            document.getElementById('bet-btn').style.background = "#007aff";
             document.getElementById('cash-btn').style.display = 'none';
+            document.getElementById('bet-btn').style.display = 'block';
             isCashed = false;
         } else if(gameState === "fly") {
             t.innerText = ""; r.style.display = 'block';
@@ -183,64 +193,97 @@
             t.innerText = "💥 " + multiplier.toFixed(2) + "x"; r.style.display = 'none';
             document.getElementById('cash-btn').style.display = 'none';
             document.getElementById('bet-btn').style.display = 'block';
-            currentBet = 0; isCashed = false;
+            currentBet = 0;
         }
 
         if(data.bets) {
-            const myName = userRaw?.first_name || "User";
+            const myName = tg.initDataUnsafe?.user?.first_name || 'User';
             document.getElementById('bets-list').innerHTML = data.bets.map(b => {
                 const isMe = b.nick === myName;
-                const m = (isMe && isCashed) ? userData.lastWinX : (b.cashedOut ? b.winX : multiplier);
-                return `<div class="bet-card ${b.cashedOut || (isMe && isCashed) ? 'won' : ''}">
+                const m = b.cashedOut ? b.winX : multiplier;
+                return `<div class="bet-card ${b.cashedOut ? 'won' : ''}">
                     <img src="${b.ava}" class="u-ava">
-                    <div style="flex:1"><b>${b.nick}</b><br><small style="display:flex; align-items:center;">${tonIcon}${(b.amount * m).toFixed(2)} TON</small></div>
-                    <div style="font-weight:900; font-size:18px;">${parseFloat(m).toFixed(2)}x</div>
+                    <div style="flex:1"><b>${b.nick}</b><br><small style="color:#34c759">${(b.amount * m).toFixed(2)} TON</small></div>
+                    <div style="font-weight:900; font-size:18px; color:var(--blue)">${parseFloat(m).toFixed(2)}x</div>
                 </div>`;
             }).join('');
         }
         
-        let hHTML = (gameState === "fly") ? `<div class="h-item" style="color:#007aff">${multiplier.toFixed(2)}x</div>` : "";
+        let hHTML = (gameState === "fly") ? `<div class="h-item live">${multiplier.toFixed(2)}x</div>` : "";
         hHTML += historyX.slice(-8).reverse().map(x => `<div class="h-item">${x}x</div>`).join('');
         document.getElementById('history-line').innerHTML = hHTML;
     });
 
     function cashOut() {
         if(gameState === "fly" && !isCashed && currentBet > 0) {
-            userData.lastWinX = multiplier;
-            userData.balance += (currentBet * multiplier);
-            userData.xp += 40;
+            const finalX = multiplier;
+            const win = currentBet * finalX;
+            userData.balance += win;
+            userData.xp += 35;
+            isCashed = true;
+
+            // ВІДПРАВКА СЕРВЕРУ ЩОБ УСІ БАЧИЛИ
+            socket.emit('cashOut', { 
+                nick: tg.initDataUnsafe?.user?.first_name || "User", 
+                winX: finalX.toFixed(2),
+                winSum: win.toFixed(2)
+            });
+
             while(userData.xp >= userData.next) {
-                userData.xp -= userData.next;
-                userData.lvl++;
-                userData.next = Math.floor(userData.next * 1.5);
+                userData.xp -= userData.next; userData.lvl++; userData.next *= 1.6;
                 tg.HapticFeedback.notificationOccurred('success');
             }
-            isCashed = true; save();
+            save();
             confetti({ particleCount: 150, spread: 60, origin: { y: 0.7 } });
             document.getElementById('cash-btn').style.display = 'none';
             document.getElementById('bet-btn').style.display = 'block';
-            document.getElementById('bet-btn').innerText = "ВИГРАШ!";
+            document.getElementById('bet-btn').innerText = "ВИГРАНО!";
         }
     }
 
+    function confirmBet() {
+        const val = parseFloat(document.getElementById('betInput').value);
+        if(val > 0 && val <= userData.balance) {
+            userData.balance -= val;
+            if(gameState === "wait") { currentBet = val; sendBet(); }
+            else { nextBet = val; document.getElementById('bet-btn').innerText = "У ЧЕРЗІ..."; }
+            save(); closeModal('betModal');
+        } else tg.showAlert("Недостатньо TON!");
+    }
+
+    function sendBet() {
+        socket.emit('placeBet', { 
+            nick: tg.initDataUnsafe?.user?.first_name || "User", 
+            ava: tg.initDataUnsafe?.user?.photo_url || "https://files.catbox.moe/ykuewj.png", 
+            amount: currentBet.toFixed(2) 
+        });
+    }
+
     function save() {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(userData));
+        localStorage.setItem(DB_KEY, JSON.stringify(userData));
         localStorage.setItem(`hist_${TG_ID}`, JSON.stringify(historyX));
         document.getElementById('bal-val').innerText = userData.balance.toFixed(2);
         document.getElementById('p-lvl-text').innerText = "LVL " + userData.lvl;
-        document.getElementById('p-nick').innerText = userRaw?.first_name || "User";
-        document.getElementById('display-id').innerText = TG_ID;
-        
-        const perc = (userData.xp / userData.next) * 100;
-        document.getElementById('xp-fill').style.width = perc + "%";
-        document.getElementById('xp-stats').innerText = `${Math.floor(userData.xp)} / ${userData.next} XP`;
-        
-        if(userRaw?.photo_url) document.getElementById('p-ava').src = userRaw.photo_url;
+        document.getElementById('p-nick').innerText = tg.initDataUnsafe?.user?.first_name || "User";
+        document.getElementById('xp-fill').style.width = (userData.xp / userData.next * 100) + "%";
+        document.getElementById('xp-stats').innerText = `${Math.floor(userData.xp)} / ${Math.floor(userData.next)} XP`;
+        if(tg.initDataUnsafe?.user?.photo_url) document.getElementById('p-ava').src = tg.initDataUnsafe.user.photo_url;
     }
 
+    function renderSkins() {
+        document.getElementById('skins-grid').innerHTML = skins.map(s => {
+            const l = userData.lvl < s.lvl;
+            return `<div class="skin-item" style="opacity:${l?0.5:1}" onclick="${!l?`setSkin('${s.src}')`:`tg.showAlert('Потрібен ${s.lvl} рівень')`}">
+                <video width="60" autoplay loop muted playsinline style="border-radius:10px;"><source src="${s.src}"></video>
+                <div style="flex:1; margin-left:12px;"><b>${s.name}</b><br><small>${l?'🔒 Закрито':'🔓 Відкрито'}</small></div>
+            </div>`;
+        }).join('');
+    }
+
+    function setSkin(src) { document.getElementById('rocket-src').src = src; document.getElementById('rocket-vid').load(); closeModal('rewardsModal'); }
     function tab(p, el) {
-        document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active-page'));
-        document.getElementById(p).classList.add('active-page');
+        document.querySelectorAll('.page').forEach(pg => pg.style.display = 'none');
+        document.getElementById(p).style.display = 'block';
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         el.classList.add('active');
         if(p === 'page-profile') {
@@ -249,35 +292,20 @@
         }
     }
 
-    function renderSkins() {
-        document.getElementById('skins-grid').innerHTML = skins.map(s => {
-            const l = userData.lvl < s.lvl;
-            return `<div class="skin-item" style="opacity:${l?0.5:1}" onclick="${!l?`setSkin('${s.src}')`:`tg.showAlert('Треба ${s.lvl} LVL')`}">
-                <video width="60" autoplay loop muted playsinline style="border-radius:10px;"><source src="${s.src}"></video>
-                <div style="flex:1; margin-left:12px;"><b>${s.name}</b><br><small>${l?'🔒 Закрито':'🔓 Відкрито'}</small></div>
-            </div>`;
-        }).join('');
+    function switchDep(t) {
+        document.getElementById('t-wal').className = t==='wallet'?'dep-tab active':'dep-tab';
+        document.getElementById('t-cry').className = t==='crypto'?'dep-tab active':'dep-tab';
+        document.getElementById('wal-area').style.display = t==='wallet'?'block':'none';
+        document.getElementById('cry-area').style.display = t==='crypto'?'block':'none';
     }
 
-    function setSkin(src) { document.getElementById('rocket-src').src = src; document.getElementById('rocket-vid').load(); closeModal('rewardsModal'); }
+    async function connectTon() {
+        const link = connector.connect({ bridgeUrl: 'https://bridge.tonapi.io/bridge', universalLink: 'https://t.me/wallet?attach=wallet' });
+        tg.openLink(link);
+    }
+
     function openModal(id) { document.getElementById(id).style.display = 'flex'; if(id==='rewardsModal') renderSkins(); }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-    function confirmBet() {
-        const v = parseFloat(document.getElementById('betInput').value);
-        if(v > 0 && v <= userData.balance) {
-            userData.balance -= v;
-            if(gameState === "wait") { currentBet = v; sendBet(); }
-            else { nextBet = v; document.getElementById('bet-btn').innerText = "У ЧЕРЗІ..."; }
-            save(); closeModal('betModal');
-        } else tg.showAlert("Недостатньо TON!");
-    }
-    function sendBet() { 
-        socket.emit('placeBet', { 
-            nick: userRaw?.first_name || "User", 
-            ava: userRaw?.photo_url || "https://files.catbox.moe/ykuewj.png", 
-            amount: currentBet 
-        }); 
-    }
 
     tg.expand();
     save();
