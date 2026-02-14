@@ -6,6 +6,7 @@
     <title>Rocket TON Multiplayer</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root { --bg: #000; --panel: #161618; --blue: #007aff; --gold: #b8860b; --border: rgba(255,255,255,0.1); }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
@@ -37,11 +38,12 @@
         .xp-bar-outer { width: 100%; background: #2c2c2e; height: 10px; border-radius: 5px; margin: 15px 0; overflow: hidden; }
         .xp-bar-inner { background: var(--blue); height: 100%; width: 0%; transition: width 0.3s; }
 
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); z-index: 2000; display: none; align-items: flex-end; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(5px); z-index: 2000; display: none; align-items: flex-end; }
         .modal-content { width: 100%; background: #1c1c1e; border-radius: 25px 25px 0 0; padding: 25px; border-top: 1px solid var(--border); }
         .input-wrapper { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 16px; margin-bottom: 20px; }
         
         .btn-main { background: var(--blue); border: none; border-radius: 16px; color: white; font-weight: 900; padding: 18px; width: 100%; font-size: 17px; }
+        .skin-item { display: flex; align-items: center; gap: 12px; background: #262628; padding: 12px; border-radius: 18px; margin-bottom: 10px; border: 1px solid #333; }
     </style>
 </head>
 <body>
@@ -120,11 +122,15 @@
         { lvl: 9, src: 'https://files.catbox.moe/npixkw.mp4', name: 'TON Elite' }
     ];
 
-    let userData = JSON.parse(localStorage.getItem('rocket_v5')) || { balance: 10.00, xp: 0, lvl: 1, nextLvl: 200 };
+    let userData = JSON.parse(localStorage.getItem('rocket_v6')) || { balance: 10.00, xp: 0, lvl: 1, nextLvl: 200 };
     let currentBet = 0, nextRoundBet = 0, isCashedOut = false, gameState = "wait", multiplier = 1.00, winX = 0;
     let historyX = JSON.parse(localStorage.getItem('rocket_history')) || [];
 
-    function save() { localStorage.setItem('rocket_v5', JSON.stringify(userData)); localStorage.setItem('rocket_history', JSON.stringify(historyX)); updateUI(); }
+    function save() { 
+        localStorage.setItem('rocket_v6', JSON.stringify(userData)); 
+        localStorage.setItem('rocket_history', JSON.stringify(historyX)); 
+        updateUI(); 
+    }
 
     socket.on('gameUpdate', (data) => {
         gameState = data.s; multiplier = data.m;
@@ -136,7 +142,7 @@
                 currentBet = nextRoundBet; nextRoundBet = 0;
                 socket.emit('placeBet', { nick: tg.initDataUnsafe?.user?.first_name || "User", ava: tg.initDataUnsafe?.user?.photo_url || "https://files.catbox.moe/ykuewj.png", amount: currentBet.toFixed(2) });
             }
-            if (currentBet === 0) document.getElementById('bet-btn').innerText = "СТАВКА";
+            document.getElementById('bet-btn').innerText = currentBet > 0 ? "СТАВКА ПРИЙНЯТА" : "СТАВКА";
             document.getElementById('bet-btn').style.display = 'block'; 
             document.getElementById('cash-btn').style.display = 'none';
             isCashedOut = false; winX = 0;
@@ -145,7 +151,7 @@
             tEl.innerText = ""; rVid.style.display = 'block';
             if (currentBet > 0 && !isCashedOut) {
                 document.getElementById('cash-btn').style.display = 'block'; document.getElementById('bet-btn').style.display = 'none';
-                document.getElementById('cash-btn').innerHTML = `ЗАБРАТИ <img src="https://files.catbox.moe/p3i6o2.jpeg" style="width:18px; border-radius:50%; vertical-align:middle; margin-left:5px;"> ${(currentBet * multiplier).toFixed(2)}`;
+                document.getElementById('cash-btn').innerHTML = `ЗАБРАТИ <img src="https://files.catbox.moe/p3i6o2.jpeg" style="width:18px; border-radius:50%; vertical-align:middle;"> ${(currentBet * multiplier).toFixed(2)}`;
             }
         }
         else if (gameState === "crash") {
@@ -153,6 +159,7 @@
             tEl.innerText = "💥 " + multiplier.toFixed(2) + "x"; rVid.style.display = 'none';
             document.getElementById('cash-btn').style.display = 'none';
             document.getElementById('bet-btn').style.display = 'block';
+            document.getElementById('bet-btn').innerText = nextRoundBet > 0 ? "В ОЧІКУВАННІ..." : "СТАВКА";
             currentBet = 0;
         }
 
@@ -163,9 +170,10 @@
         if (data.bets) {
             document.getElementById('bets-list').innerHTML = data.bets.map(b => {
                 const isMe = b.nick === (tg.initDataUnsafe?.user?.first_name || 'User');
-                const m = (isMe && isCashedOut) ? winX : multiplier;
+                // Якщо гравець уже забрав (cashedOut), показуємо його фіксований ікс
+                const m = (b.cashedOut) ? b.winX : multiplier;
                 return `
-                <div class="bet-card ${isMe && isCashedOut ? 'won' : ''}">
+                <div class="bet-card ${b.cashedOut ? 'won' : ''}">
                     <img src="${b.ava}" class="u-ava">
                     <div style="flex:1;">
                         <div style="font-weight:900; font-size:14px;">${b.nick}</div>
@@ -173,7 +181,9 @@
                             <img src="https://files.catbox.moe/p3i6o2.jpeg" class="ton-ico-clean" style="width:12px; height:12px;"> ${(b.amount * m).toFixed(2)}
                         </div>
                     </div>
-                    <div style="text-align:right; font-weight:900; color:var(--blue); font-size:20px;">${gameState === "wait" ? "WAIT" : m.toFixed(2) + "x"}</div>
+                    <div style="text-align:right; font-weight:900; color:var(--blue); font-size:20px;">
+                        ${gameState === "wait" ? "WAIT" : parseFloat(m).toFixed(2) + "x"}
+                    </div>
                 </div>`;
             }).join('');
         }
@@ -197,7 +207,20 @@
     function cashOut() {
         if (gameState === "fly" && !isCashedOut && currentBet > 0) {
             winX = multiplier;
-            userData.balance += currentBet * winX; userData.xp += 25;
+            const winSum = currentBet * winX;
+            userData.balance += winSum;
+            userData.xp += 25;
+
+            // Відправляємо серверу сигнал про кешаут
+            socket.emit('cashOut', {
+                nick: tg.initDataUnsafe?.user?.first_name || "User",
+                winX: winX.toFixed(2),
+                winSum: winSum.toFixed(2)
+            });
+
+            // Конфетті!
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.7 }, colors: ['#007aff', '#34c759', '#ffffff'] });
+
             if(userData.xp >= userData.nextLvl) { userData.lvl++; userData.xp = 0; userData.nextLvl *= 1.8; }
             isCashedOut = true; 
             document.getElementById('cash-btn').style.display = 'none';
@@ -210,14 +233,15 @@
     function renderSkins() {
         document.getElementById('skins-grid').innerHTML = allSkins.map(s => {
             const isLocked = userData.lvl < s.lvl;
-            return `<div class="skin-item" style="display:flex; align-items:center; gap:12px; background:#262628; padding:12px; border-radius:18px; margin-bottom:10px; opacity:${isLocked?0.5:1}" onclick="${!isLocked?`setSkin('${s.src}')`:`tg.showAlert('Рівень ${s.lvl}!')`}">
+            return `<div class="skin-item" style="opacity:${isLocked?0.5:1}" onclick="${!isLocked?`setSkin('${s.src}')`:`tg.showAlert('Рівень ${s.lvl}!')`}">
                 <video width="60" autoplay loop muted playsinline style="border-radius:12px;"><source src="${s.src}"></video>
-                <div style="flex:1;"><b>${s.name}</b><br><small>${isLocked?'🔒 Lvl '+s.lvl:'🔓 OK'}</small></div>
+                <div style="flex:1; margin-left:12px;"><b>${s.name}</b><br><small>${isLocked?'🔒 Lvl '+s.lvl:'🔓 OK'}</small></div>
             </div>`;
         }).join('');
     }
 
     function setSkin(src) { document.getElementById('rocket-src').src = src; document.getElementById('rocket-vid').load(); closeModal('rewardsModal'); }
+    
     function updateUI() {
         document.getElementById('bal-val').innerText = userData.balance.toFixed(2);
         document.getElementById('p-nick').innerText = tg.initDataUnsafe?.user?.first_name || "User";
@@ -226,13 +250,16 @@
         document.getElementById('xp-fill').style.width = ((userData.xp / userData.nextLvl) * 100) + "%";
         document.getElementById('xp-stats').innerText = `XP: ${Math.floor(userData.xp)} / ${Math.floor(userData.nextLvl)}`;
     }
+
     function tab(p, el) {
         document.getElementById('page-game').style.display = (p === 'page-game' ? 'block' : 'none');
         document.getElementById('page-profile').style.display = (p === 'page-profile' ? 'block' : 'none');
         document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active')); el.classList.add('active');
     }
+
     function openModal(id) { document.getElementById(id).style.display = 'flex'; if(id==='rewardsModal') renderSkins(); }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+    
     updateUI();
 </script>
 </body>
