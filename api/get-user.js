@@ -1,8 +1,7 @@
-const fetch = require('node-fetch');
+import fetch from 'node-fetch';
 
 export default async function handler(req, res) {
     const { username } = req.query;
-    // Твой токен бота
     const BOT_TOKEN = '8617323759:AAGtVEQ16R8lHU9x8jZ4I5MDiEvc6d1HZGE';
 
     if (!username) return res.status(400).json({ ok: false });
@@ -14,7 +13,7 @@ export default async function handler(req, res) {
         if (data.ok) {
             res.status(200).json({
                 ok: true,
-                name: data.result.first_name + (data.result.last_name ? ' ' + data.result.last_name : ''),
+                name: data.result.first_name || username,
                 photo: `https://t.me/i/userpic/320/${username.replace('@', '')}.jpg`
             });
         } else {
