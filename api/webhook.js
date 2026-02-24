@@ -7,7 +7,7 @@ export default async function handler(req, res) {
     const body = req.body;
     
     // !!! ЗАМЕНИ ЭТИ ЦИФРЫ НА СВОЙ ID ИЗ @userinfobot !!!
-    const MY_ID = 'ТВОЙ_АЙДИ_ЦИФРАМИ'; 
+    const MY_ID = '1471307057'; 
     const BOT_TOKEN = '8617323759:AAGtVEQ16R8lHU9x8jZ4I5MDiEvc6d1HZGE';
 
     // Если оплата прошла успешно
