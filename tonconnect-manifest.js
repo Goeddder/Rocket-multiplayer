@@ -1,5 +1,0 @@
-{
-  "url": "https://rocket-multiplayer.vercel.app",
-  "name": "Rocket Stars Store",
-  "iconUrl": "https://rocket-multiplayer.vercel.app/icon.png"
-}
