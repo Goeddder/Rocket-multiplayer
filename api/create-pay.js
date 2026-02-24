@@ -28,7 +28,7 @@ export default async function handler(req, res) {
         if (data.ok) {
             res.status(200).json({ pay_url: data.result.pay_url });
         } else {
-            res.status(500).json({ error: 'CryptoBot API error' });
+            res.status(500).json({ error: 'CryptoBot API error', details: data });
         }
     } catch (e) {
         res.status(500).json({ error: e.message });
