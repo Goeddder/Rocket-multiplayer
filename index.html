@@ -32,7 +32,6 @@
             overflow-x: hidden;
         }
 
-        /* Кнопка кошелька в углу */
         #ton-connect-button {
             margin-top: 15px;
             align-self: flex-end;
@@ -73,7 +72,6 @@
             font-weight: 700;
         }
 
-        /* Поле ввода юзернейма */
         .glass-panel {
             background: var(--card-bg);
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -92,7 +90,6 @@
             font-weight: 500;
         }
 
-        /* Отображение найденного юзера */
         .user-card {
             display: flex; align-items: center; gap: 15px;
             margin-top: 15px; padding-top: 15px;
@@ -111,14 +108,12 @@
         .status.online { color: var(--accent); }
         .status.error { color: var(--error); }
 
-        /* Выбор количества звезд */
         .stars-input-row { display: flex; align-items: center; justify-content: space-between; }
         .stars-input-row input {
             background: transparent; border: none; color: var(--accent);
             font-size: 34px; font-weight: 900; outline: none; width: 70%;
         }
 
-        /* Аккордеон / Дропдаун */
         .dropdown { margin-top: 12px; }
         .dropdown-header {
             background: rgba(255, 255, 255, 0.04);
@@ -141,7 +136,6 @@
         .option:active { background: rgba(255, 204, 51, 0.1); }
         .option b { color: var(--accent); }
 
-        /* Итоговая цена */
         .price-summary {
             margin-top: 30px; text-align: center; padding: 25px;
             background: linear-gradient(to bottom, rgba(255, 215, 0, 0.07), transparent);
@@ -150,7 +144,6 @@
         .price-summary span { color: #888; font-size: 14px; display: block; margin-bottom: 5px; }
         .price-summary b { color: var(--accent); font-size: 28px; font-weight: 900; letter-spacing: -1px; }
 
-        /* Кнопка оплаты */
         .main-btn {
             position: fixed; bottom: 30px; width: 90%; max-width: 390px;
             background: var(--yellow-grad); color: #000; border: none;
@@ -210,28 +203,25 @@
 
     <div class="price-summary">
         <span>К ОПЛАТЕ ВСЕГО</span>
-        <b id="final-price">0.35 TON / 1.40 USDT</b>
+        <b id="final-price">0.58 TON / 0.8 USDT</b>
     </div>
 </div>
 
 <button class="main-btn" onclick="initOrder()">Купить Звёзды</button>
 
 <script>
-    // Инициализация Telegram WebApp
     const tg = window.Telegram.WebApp;
     tg.expand();
     tg.ready();
 
-        // Настройка TonConnect
     const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
         manifestUrl: 'https://rocket-multiplayer.vercel.app/tonconnect-manifest.json',
         buttonRootId: 'ton-connect-button'
     });
 
-    // Расчет цены
     function recalc(val) {
         if (val < 0) val = 0;
-        const ton = (val * 0.007).toFixed(2);
+        const ton = (val * 0.0118).toFixed(2);
         const usdt = (val * 0.028).toFixed(2);
         document.getElementById('final-price').innerText = `${ton} TON / ${usdt} USDT`;
     }
@@ -243,7 +233,6 @@
         tg.HapticFeedback.selectionChanged();
     }
 
-    // Поиск пользователя (имитация + подготовка под API)
     let searchTimer;
     function handleSearch(val) {
         clearTimeout(searchTimer);
@@ -257,34 +246,31 @@
         }
 
         searchTimer = setTimeout(async () => {
-            display.style.opacity = "1";
-            const username = val.replace('@', '');
-            
-            // Пытаемся найти через твой API (если ты его залил в папку /api)
+            const username = val.replace('@', '').trim();
             try {
                 const res = await fetch(`/api/get-user?username=${username}`);
                 const data = await res.json();
                 
+                display.style.opacity = "1";
                 if (data.ok) {
                     nameBox.innerText = data.name;
                     statusBox.innerText = "Пользователь найден";
                     statusBox.className = "status online";
                     document.getElementById('avatar-container').innerHTML = `<img src="${data.photo}">`;
                 } else {
-                    nameBox.innerText = "Ошибка";
-                    statusBox.innerText = "Пользователь не найден";
-                    statusBox.className = "status error";
-                    document.getElementById('avatar-container').innerHTML = `<i class="fas fa-times" style="color:var(--error)"></i>`;
+                    nameBox.innerText = "@" + username;
+                    statusBox.innerText = "Будет отправлено по нику";
+                    statusBox.className = "status online";
+                    document.getElementById('avatar-container').innerHTML = `<i class="fas fa-user-check" style="color:var(--accent)"></i>`;
                 }
             } catch (e) {
-                // Если API еще не развернут - просто показываем введенный ник для визуала
+                display.style.opacity = "1";
                 nameBox.innerText = "@" + username;
-                statusBox.innerText = "Нажмите 'Купить' для проверки";
+                statusBox.innerText = "Готов к оплате";
             }
         }, 600);
     }
 
-    // Логика заказа
     function initOrder() {
         const user = document.getElementById('user-input').value;
         const stars = document.getElementById('star-count').value;
@@ -295,19 +281,16 @@
         }
 
         tg.showPopup({
-            title: 'Подтверждение заказа',
-            message: `Вы действительно хотите купить ${stars} ⭐️ для ${user}?`,
+            title: 'Подтверждение',
+            message: `Купить ${stars} ⭐️ для ${user}?`,
             buttons: [
                 {id: 'ton', type: 'default', text: 'Оплатить TON'},
-                {id: 'crypto', type: 'default', text: 'CryptoBot (USDT/ГРН)'},
+                {id: 'crypto', type: 'default', text: 'CryptoBot (USDT)'},
                 {id: 'cancel', type: 'destructive', text: 'Отмена'}
             ]
-        }, async (btnId) => {
-            if (btnId === 'ton') {
-                processTonPayment(stars);
-            } else if (btnId === 'crypto') {
-                processCryptoBotPayment(stars, user);
-            }
+        }, (btnId) => {
+            if (btnId === 'ton') processTonPayment(stars);
+            else if (btnId === 'crypto') processCryptoBotPayment(stars, user);
         });
     }
 
@@ -316,33 +299,31 @@
             tg.showAlert("Сначала подключите кошелек!");
             return;
         }
-        const amount = (stars * 0.007 * 1000000000).toString();
+        const amount = (stars * 0.0118 * 1000000000).toString();
         try {
             await tonConnectUI.sendTransaction({
                 validUntil: Math.floor(Date.now() / 1000) + 360,
                 messages: [{
-                    address: "UQATIzX89EOOTqfsr8KE64MXvVSa4CGybjwmkPv3-yHbI3ZE", // ТВОЙ КОШЕЛЕК
+                    address: "UQATIzX89EOOTqfsr8KE64MXvVSa4CGybjwmkPv3-yHbI3ZE",
                     amount: amount
                 }]
             });
-            tg.showAlert("Транзакция отправлена! Звезды придут после подтверждения.");
+            tg.showAlert("Транзакция отправлена!");
         } catch (e) { console.error(e); }
     }
 
     async function processCryptoBotPayment(stars, user) {
-        // Вызов твоего API для создания счета
-        const res = await fetch('/api/create-pay', {
-            method: 'POST',
-            body: JSON.stringify({ amount: stars, user: user })
-        });
-        const data = await res.json();
-        if (data.pay_url) {
-            tg.openLink(data.pay_url);
-        } else {
-            tg.showAlert("Ошибка создания счета. Попробуйте TON.");
-        }
+        try {
+            const res = await fetch('/api/create-pay', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount: stars, user: user })
+            });
+            const data = await res.json();
+            if (data.pay_url) tg.openLink(data.pay_url);
+            else tg.showAlert("Ошибка CryptoBot API");
+        } catch (e) { tg.showAlert("Ошибка связи с сервером"); }
     }
 </script>
-
 </body>
 </html>
