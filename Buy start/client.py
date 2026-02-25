@@ -4,14 +4,14 @@ from  config import DATA, FRAGMENT_HASH, FRAGMENT_ADDRES,FRAGMENT_PUBLICKEY,FRAG
 
 def get_cookies(DATA):
     return {
-        'stel_ssid': DATA.get('stel_ssid', ''),
-        'stel_dt': DATA.get('stel_dt', ''),
-        'stel_ton_token': DATA.get('stel_ton_token', ''),
-        'stel_token': DATA.get('stel_token', ''),
+        'stel_ssid': DATA.get('stel_ssid', '0a791baaefc2da4f7e_17021482322052895780'),
+        'stel_dt': DATA.get('stel_dt', '-120'),
+        'stel_ton_token': DATA.get('stel_ton_token', 'TXCMUcx3By2LsEHL5sPhz0c8blblgPTiLA5Pz6g88_PoL09Dq4DWjP35rjnElv79TBrMCxyIiTSnlay9sQoqeZOXBg3FxfYjLZ8At16S7lrNQJArm8JVCODO_nZXSC0bJeFXEzLI00F0rkS19dv0Ric0xyudXCz9Sq9JWs_aCS9nueKCrQSw9gR46GAbShRc3_ucCFj-'),
+        'stel_token': DATA.get('stel_token', 'e9f5c227d3bdf60f806ac6634b6ba4bde9f5c23ce9f5c9fd14f43059def026b1eb6b6'),
     }
 
 class FragmentClient:
-    URL = F"https://fragment.com/api?hash={FRAGMENT_HASH}"
+    URL = F"https://fragment.com/api?hash=747c09519b10e540aa"
 
     async def fetch_recipient(self, query):
         data = {"query": query, "method": "searchStarsRecipient"}
