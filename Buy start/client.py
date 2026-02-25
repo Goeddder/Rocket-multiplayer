@@ -11,7 +11,8 @@ def get_cookies(DATA):
     }
 
 class FragmentClient:
-    URL = F"https://fragment.com/api?hash=747c09519b10e540aa"
+    URL = "https://fragment.com/api?hash=747c09519b10e540aa"
+    # ... дальше твой остальной код без изменений
 
     async def fetch_recipient(self, query):
         data = {"query": query, "method": "searchStarsRecipient"}
