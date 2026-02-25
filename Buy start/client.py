@@ -1,59 +1,44 @@
 import httpx
-import logging
-from  config import DATA, FRAGMENT_HASH, FRAGMENT_ADDRES,FRAGMENT_PUBLICKEY,FRAGMENT_WALLETS
-
-def get_cookies(DATA):
-    return {
-        'stel_ssid': DATA.get('stel_ssid', '0a791baaefc2da4f7e_17021482322052895780'),
-        'stel_dt': DATA.get('stel_dt', '-120'),
-        'stel_ton_token': DATA.get('stel_ton_token', 'TXCMUcx3By2LsEHL5sPhz0c8blblgPTiLA5Pz6g88_PoL09Dq4DWjP35rjnElv79TBrMCxyIiTSnlay9sQoqeZOXBg3FxfYjLZ8At16S7lrNQJArm8JVCODO_nZXSC0bJeFXEzLI00F0rkS19dv0Ric0xyudXCz9Sq9JWs_aCS9nueKCrQSw9gR46GAbShRc3_ucCFj-'),
-        'stel_token': DATA.get('stel_token', 'e9f5c227d3bdf60f806ac6634b6ba4bde9f5c23ce9f5c9fd14f43059def026b1eb6b6'),
-    }
+import json
+import urllib.parse
+from Buy_start.config import DATA, FRAGMENT_HASH
 
 class FragmentClient:
-    URL = "https://fragment.com/api?hash=747c09519b10e540aa"
-    # ... дальше твой остальной код без изменений
+    URL = f"https://fragment.com/api?hash={FRAGMENT_HASH}"
 
     async def fetch_recipient(self, query):
-        data = {"query": query, "method": "searchStarsRecipient"}
-
+        payload = {
+            "query": query.replace('@', ''),
+            "method": "searchStarsRecipient"
+        }
         async with httpx.AsyncClient() as client:
-            response = await client.post(self.URL, cookies=get_cookies(DATA), data=data)
-            print(response.json())
+            response = await client.post(self.URL, cookies=DATA, data=payload)
             return response.json().get("found", {}).get("recipient")
 
-    async def fetch_req_id(self, recipient, quantity):
-        data = {"recipient": recipient, "quantity": quantity, "method": "initBuyStarsRequest"}
+    async def fetch_req_id(self, recipient, amount):
+        payload = {
+            "recipient": json.dumps(recipient),
+            "amount": int(amount),
+            "method": "initStarsGift"
+        }
         async with httpx.AsyncClient() as client:
-            response = await client.post(self.URL, cookies=get_cookies(DATA), data=data)
-            print(response.json())
+            response = await client.post(self.URL, cookies=DATA, data=payload)
             return response.json().get("req_id")
 
-    async def fetch_buy_link(self, recipient, req_id, quantity):
-        data = {
-            "address": f"{FRAGMENT_ADDRES}", "chain": "-239",
-            "walletStateInit": f"{FRAGMENT_WALLETS}",
-            "publicKey": f"{FRAGMENT_PUBLICKEY}",
-            "features": ["SendTransaction", {"name": "SendTransaction", "maxMessages": 255}], "maxProtocolVersion": 2,
-            "platform": "iphone", "appName": "Tonkeeper", "appVersion": "5.0.14",
-            "transaction": "1",
-            "id": req_id,
-            "show_sender": "0",
-            "method": "getBuyStarsLink"
-        }
-        headers = {
-            "accept": "application/json, text/javascript, */*; q=0.01",
-            "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-            "origin": "https://fragment.com",
-            "referer": f"https://fragment.com/stars/buy?recipient={recipient}&quantity={quantity}",
-            "user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1",
-            "x-requested-with": "XMLHttpRequest"
+    async def fetch_buy_link(self, recipient, req_id, amount):
+        payload = {
+            "req_id": req_id,
+            "method": "getStarsGiftLink"
         }
         async with httpx.AsyncClient() as client:
-            response = await client.post(self.URL, headers=headers, cookies=get_cookies(DATA), data=data)
-            json_data = response.json()
-            print(response.json())
-            if json_data.get("ok") and "transaction" in json_data:
-                transaction = json_data["transaction"]
-                return transaction["messages"][0]["address"], transaction["messages"][0]["amount"], transaction["messages"][0]["payload"]
-        return None, None, None
+            response = await client.post(self.URL, cookies=DATA, data=payload)
+            link = response.json().get("link", "")
+            if not link: return None, None, None
+
+            # Разбираем ссылку для транзакции
+            clean_link = link.replace('ton://transfer/', 'http://f.c/')
+            parsed = urllib.parse.urlparse(clean_link)
+            address = parsed.path.replace('/', '')
+            params = urllib.parse.parse_qs(parsed.query)
+            
+            return address, params.get('amount', ['0'])[0], params.get('bin', [''])[0]
