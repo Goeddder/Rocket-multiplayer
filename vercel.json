@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/get-fragment-data",
+      "destination": "/api/get-fragment-data.py"
+    }
+  ]
+}
