@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Premium Star Shop</title>
+    <title>SkruchStarsBot — Shop</title>
     
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
@@ -42,6 +42,7 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         .header { text-align: center; margin: 10px 0 30px 0; }
+        .header h1 { margin: 5px 0; font-weight: 900; letter-spacing: -1px; }
         .header i.star-logo { 
             font-size: 70px; background: var(--yellow-grad);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
@@ -138,47 +139,47 @@
 
 <div class="header">
     <i class="fas fa-star star-logo"></i>
-    <h1>Premium Stars</h1>
-    <p>Доставка на ваш аккаунт</p>
+    <h1>SkruchStarsBot</h1>
+    <p>Мгновенная доставка Stars</p>
 </div>
 
 <div class="container">
-    <div class="label">Получатель (Никнейм)</div>
+    <div class="label">Получатель</div>
     <div class="glass-panel">
         <div class="input-wrapper">
             <i class="fas fa-at" style="color:var(--accent)"></i>
-            <input type="text" id="user-input" placeholder="например, durov" oninput="updateUser(this.value)">
+            <input type="text" id="user-input" placeholder="nickname" oninput="updateUser(this.value)">
         </div>
         <div class="user-card" id="user-display" style="opacity: 0.3;">
-            <div class="avatar"><i class="fas fa-user" style="color:#444"></i></div>
+            <div class="avatar"><i class="fas fa-user" style="color:var(--accent)"></i></div>
             <div class="user-info">
                 <div id="display-name" style="font-weight:700">Пользователь</div>
-                <div id="display-status" style="font-size:12px;color:#666">Введите username</div>
+                <div id="display-status" style="font-size:12px;color:#666">Введите никнейм</div>
             </div>
         </div>
     </div>
 
-    <div class="label">Количество звёзд</div>
+    <div class="label">Количество</div>
     <div class="glass-panel stars-input-row">
         <input type="number" id="star-count" value="100" oninput="recalc(this.value)">
         <i class="fas fa-star" style="color:var(--accent)"></i>
     </div>
 
     <div class="dropdown" id="presets">
-        <div class="dropdown-header" onclick="this.parentElement.classList.toggle('active')">
-            <span>Выбрать пакет</span>
+        <div class="dropdown-header" onclick="toggleDropdown()">
+            <span>Выбрать готовый пакет</span>
             <i class="fas fa-chevron-down"></i>
         </div>
         <div class="dropdown-list">
             <div class="option" onclick="applyPreset(100, 1.20)"><span>100 ⭐️</span><b>1.20 TON</b></div>
-            <div class="option" onclick="applyPreset(500, 6.00)"><span>500 ⭐️</span><b>6.00 TON</b></div>
-            <div class="option" onclick="applyPreset(1000, 12.00)"><span>1000 ⭐️</span><b>12.00 TON</b></div>
-            <div class="option" onclick="applyPreset(5000, 60.00)"><span>5000 ⭐️</span><b>60.00 TON</b></div>
+            <div class="option" onclick="applyPreset(500, 5.90)"><span>500 ⭐️</span><b>5.90 TON</b></div>
+            <div class="option" onclick="applyPreset(1000, 11.50)"><span>1000 ⭐️</span><b>11.50 TON</b></div>
+            <div class="option" onclick="applyPreset(5000, 55.00)"><span>5000 ⭐️</span><b>55.00 TON</b></div>
         </div>
     </div>
 
     <div class="price-summary">
-        <span>ИТОГО К ОПЛАТЕ</span>
+        <span>К ОПЛАТЕ</span>
         <b id="final-price">1.20 TON</b>
     </div>
 </div>
@@ -189,15 +190,22 @@
     const MY_WALLET = "UQATIzX89EOOTqfsr8KE64MXvVSa4CGybjwmkPv3-yHbI3ZE";
     const tg = window.Telegram.WebApp;
     tg.expand();
+    tg.enableClosingConfirmation();
 
     const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
         manifestUrl: 'https://rocket-multiplayer.vercel.app/tonconnect-manifest.json',
         buttonRootId: 'ton-connect-button'
     });
 
+    function toggleDropdown() {
+        document.getElementById('presets').classList.toggle('active');
+        tg.HapticFeedback.selectionChanged();
+    }
+
     function recalc(val) {
         if (val < 0) val = 0;
-        const price = (val * 0.012).toFixed(2);
+        // Твоя формула цены: 1 звезда = 0.012 TON (примерно)
+        const price = (val * 0.0115).toFixed(2);
         document.getElementById('final-price').innerText = price + " TON";
     }
 
@@ -210,9 +218,10 @@
         if (clean.length >= 3) {
             display.style.opacity = "1";
             name.innerText = "@" + clean;
-            status.innerText = "Аккаунт подтвержден";
+            status.innerText = "Готов к получению";
         } else {
             display.style.opacity = "0.3";
+            name.innerText = "Пользователь";
             status.innerText = "Минимум 3 символа";
         }
     }
@@ -221,7 +230,7 @@
         document.getElementById('star-count').value = stars;
         document.getElementById('final-price').innerText = price.toFixed(2) + " TON";
         document.getElementById('presets').classList.remove('active');
-        tg.HapticFeedback.selectionChanged();
+        tg.HapticFeedback.notificationOccurred('success');
     }
 
     async function initOrder() {
@@ -230,16 +239,15 @@
         const priceStr = document.getElementById('final-price').innerText.split(' ')[0];
 
         if (!user || user.length < 3) {
-            tg.showAlert("Пожалуйста, введите корректный никнейм!");
+            tg.showAlert("Введите никнейм получателя!");
             return;
         }
 
         if (!tonConnectUI.connected) {
-            tg.showAlert("Сначала подключите кошелек кнопкой справа вверху!");
+            tg.showAlert("Подключите кошелек!");
             return;
         }
 
-        // Ключевое исправление: строгое целое число в нанотонах
         const nanoAmount = Math.floor(parseFloat(priceStr) * 1000000000).toString();
 
         const transaction = {
@@ -251,31 +259,31 @@
         };
 
         try {
-            tg.HapticFeedback.impactOccurred('medium');
+            tg.HapticFeedback.impactOccurred('heavy');
             const result = await tonConnectUI.sendTransaction(transaction);
 
             if (result) {
-                tg.showAlert("Успешно! Мы получили оплату и скоро отправим звезды.");
+                tg.showPopup({
+                    title: "Оплата принята",
+                    message: "Ожидайте начисления звезд в течение нескольких минут.",
+                    buttons: [{type: 'close'}]
+                });
                 
-                // Уведомление в админку
+                // Уведомление твоего бэкенда (Python бота)
                 fetch('/api/notify-admin', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
                         user_to_receive: user,
-                        stars: stars,
+                        stars: stars + " Stars",
                         amount: priceStr,
                         sender: tonConnectUI.account.address
                     })
                 });
             }
         } catch (e) {
-            console.error("TX Error:", e);
-            if (e.message.includes('reject')) {
-                tg.showPopup({ message: "Транзакция была отменена вами." });
-            } else {
-                tg.showAlert("Ошибка кошелька: " + e.message);
-            }
+            console.error(e);
+            tg.HapticFeedback.notificationOccurred('error');
         }
     }
 </script>
