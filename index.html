@@ -4,10 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Premium Star Shop</title>
+    
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+
         :root {
             --yellow-grad: linear-gradient(135deg, #ffd700 0%, #ffae00 100%);
             --bg-color: #0e0e0e;
@@ -15,108 +19,198 @@
             --accent: #ffcc33;
             --text-main: #ffffff;
         }
+
         body {
-            margin: 0; padding: 0; font-family: 'Inter', sans-serif;
-            background: var(--bg-color); color: var(--text-main);
-            display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+            margin: 0; padding: 0;
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-color);
             background-image: radial-gradient(circle at 90% 10%, rgba(255, 204, 51, 0.15), transparent);
+            color: var(--text-main);
+            display: flex; flex-direction: column; align-items: center;
+            min-height: 100vh;
         }
+
         #ton-connect-button { margin: 15px 15px 0 auto; z-index: 100; }
-        .container { width: 90%; max-width: 420px; padding-bottom: 140px; animation: fadeIn 0.8s ease-out; }
+
+        .container {
+            width: 90%; max-width: 420px;
+            padding-bottom: 140px;
+            animation: fadeIn 0.8s ease-out;
+        }
+
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
         .header { text-align: center; margin: 10px 0 30px 0; }
         .header i.star-logo { 
-            font-size: 65px; background: var(--yellow-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.5)); animation: pulse 3s infinite ease-in-out;
+            font-size: 65px; background: var(--yellow-grad);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.5));
+            animation: pulse 3s infinite ease-in-out;
         }
+
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
-        .label { font-size: 11px; color: #888; margin: 25px 0 10px 10px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; }
-        .glass-panel { background: var(--card-bg); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 24px; padding: 20px; backdrop-filter: blur(20px); }
+
+        .label {
+            font-size: 11px; color: #888;
+            margin: 25px 0 10px 10px;
+            text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700;
+        }
+
+        .glass-panel {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px; padding: 20px;
+            backdrop-filter: blur(20px);
+        }
+
         .input-wrapper { display: flex; align-items: center; gap: 15px; }
-        .input-wrapper input { background: transparent; border: none; color: white; font-size: 17px; outline: none; width: 100%; font-weight: 500; }
-        .user-card { display: flex; align-items: center; gap: 15px; margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255, 255, 255, 0.08); transition: 0.4s; }
-        .avatar { width: 50px; height: 50px; border-radius: 50%; background: #1a1a1a; border: 2px solid var(--accent); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .input-wrapper input {
+            background: transparent; border: none; color: white;
+            font-size: 17px; outline: none; width: 100%;
+        }
+
+        .user-card {
+            display: flex; align-items: center; gap: 15px;
+            margin-top: 15px; padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            transition: 0.4s;
+        }
+
+        .avatar {
+            width: 50px; height: 50px; border-radius: 50%;
+            background: #1a1a1a; border: 2px solid var(--accent);
+            display: flex; align-items: center; justify-content: center;
+        }
+
         .stars-input-row { display: flex; align-items: center; justify-content: space-between; }
-        .stars-input-row input { background: transparent; border: none; color: var(--accent); font-size: 34px; font-weight: 900; outline: none; width: 70%; }
+        .stars-input-row input {
+            background: transparent; border: none; color: var(--accent);
+            font-size: 34px; font-weight: 900; outline: none; width: 70%;
+        }
+
         .dropdown { margin-top: 12px; }
-        .dropdown-header { background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 14px 20px; display: flex; justify-content: space-between; cursor: pointer; color: #aaa; }
-        .dropdown-list { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; background: rgba(20, 20, 20, 0.6); border-radius: 0 0 16px 16px; }
+        .dropdown-header {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px; padding: 14px 20px;
+            display: flex; justify-content: space-between; cursor: pointer; color: #aaa;
+        }
+
+        .dropdown-list {
+            max-height: 0; overflow: hidden; transition: max-height 0.3s ease;
+            background: rgba(20, 20, 20, 0.8); border-radius: 0 0 16px 16px;
+        }
+
         .dropdown.active .dropdown-list { max-height: 300px; border: 1px solid rgba(255, 255, 255, 0.08); border-top: none; }
         .dropdown.active .dropdown-header { border-radius: 16px 16px 0 0; }
-        .option { padding: 14px 20px; display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .option b { color: var(--accent); }
-        .price-summary { margin-top: 30px; text-align: center; padding: 25px; border-radius: 28px; border: 1px dashed var(--accent); background: rgba(255, 215, 0, 0.05); }
+
+        .option {
+            padding: 14px 20px; display: flex; justify-content: space-between;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .price-summary {
+            margin-top: 30px; text-align: center; padding: 25px;
+            border-radius: 28px; border: 1px dashed var(--accent);
+            background: rgba(255, 215, 0, 0.05);
+        }
+
         .price-summary b { color: var(--accent); font-size: 28px; font-weight: 900; }
-        .main-btn { position: fixed; bottom: 30px; width: 90%; max-width: 390px; background: var(--yellow-grad); color: #000; border: none; padding: 22px; border-radius: 24px; font-size: 18px; font-weight: 800; z-index: 1000; box-shadow: 0 15px 35px rgba(255, 174, 0, 0.3); }
+
+        .main-btn {
+            position: fixed; bottom: 30px; width: 90%; max-width: 390px;
+            background: var(--yellow-grad); color: #000; border: none;
+            padding: 22px; border-radius: 24px; font-size: 18px; font-weight: 800;
+            box-shadow: 0 15px 35px rgba(255, 174, 0, 0.3);
+        }
     </style>
 </head>
 <body>
-    <div id="ton-connect-button"></div>
-    <div class="header">
-        <i class="fas fa-star star-logo"></i>
-        <h1>Premium Stars</h1>
-        <p>Мгновенная доставка после оплаты</p>
+
+<div id="ton-connect-button"></div>
+
+<div class="header">
+    <i class="fas fa-star star-logo"></i>
+    <h1>Premium Stars</h1>
+    <p>Мгновенная доставка через админа</p>
+</div>
+
+<div class="container">
+    <div class="label">Получатель подарка</div>
+    <div class="glass-panel">
+        <div class="input-wrapper">
+            <i class="fas fa-at" style="color:var(--accent)"></i>
+            <input type="text" id="user-input" placeholder="Никнейм" oninput="updateUser(this.value)">
+        </div>
+        <div class="user-card" id="user-display" style="opacity: 0.3;">
+            <div class="avatar"><i class="fas fa-user" style="color:#333"></i></div>
+            <div class="user-info">
+                <div id="display-name" style="font-weight:800">Пользователь</div>
+                <div id="display-status" style="font-size:12px;color:#777">Введите @username</div>
+            </div>
+        </div>
     </div>
-    <div class="container">
-        <div class="label">Получатель подарка</div>
-        <div class="glass-panel">
-            <div class="input-wrapper">
-                <i class="fas fa-at" style="color:var(--accent)"></i>
-                <input type="text" id="user-input" placeholder="Никнейм" oninput="updateUser(this.value)">
-            </div>
-            <div class="user-card" id="user-display" style="opacity: 0.3;">
-                <div class="avatar"><i class="fas fa-user" style="color:#333"></i></div>
-                <div class="user-info">
-                    <div id="display-name" style="font-weight:800">Пользователь</div>
-                    <div id="display-status" style="font-size:12px;color:#777">Введите @username</div>
-                </div>
-            </div>
-        </div>
-        <div class="label">Количество звёзд ⭐️</div>
-        <div class="glass-panel stars-input-row">
-            <input type="number" id="star-count" value="50" oninput="recalc(this.value)">
-            <i class="fas fa-star" style="color:var(--accent)"></i>
-        </div>
-        <div class="dropdown" id="presets">
-            <div class="dropdown-header" onclick="this.parentElement.classList.toggle('active')"><span>Выбрать пакет</span><i class="fas fa-chevron-down"></i></div>
-            <div class="dropdown-list">
-                <div class="option" onclick="applyPreset(100)"><span>100 ⭐️</span><b>1.2 TON</b></div>
-                <div class="option" onclick="applyPreset(500)"><span>500 ⭐️</span><b>6.0 TON</b></div>
-                <div class="option" onclick="applyPreset(1000)"><span>1000 ⭐️</span><b>12.0 TON</b></div>
-            </div>
-        </div>
-        <div class="price-summary"><span>ИТОГО К ОПЛАТЕ</span><br><b id="final-price">0.60 TON</b></div>
+
+    <div class="label">Количество звёзд ⭐️</div>
+    <div class="glass-panel stars-input-row">
+        <input type="number" id="star-count" value="50" oninput="recalc(this.value)">
+        <i class="fas fa-star" style="color:var(--accent); font-size: 24px;"></i>
     </div>
-    <button class="main-btn" onclick="initOrder()">Оплатить и заказать</button>
+
+    <div class="dropdown" id="presets">
+        <div class="dropdown-header" onclick="this.parentElement.classList.toggle('active')">
+            <span>Выбрать готовый пакет</span>
+            <i class="fas fa-chevron-down"></i>
+        </div>
+        <div class="dropdown-list">
+            <div class="option" onclick="applyPreset(100)"><span>100 ⭐️</span><b>1.20 TON</b></div>
+            <div class="option" onclick="applyPreset(500)"><span>500 ⭐️</span><b>6.00 TON</b></div>
+            <div class="option" onclick="applyPreset(1000)"><span>1000 ⭐️</span><b>12.00 TON</b></div>
+        </div>
+    </div>
+
+    <div class="price-summary">
+        <span>ИТОГО К ОПЛАТЕ</span><br>
+        <b id="final-price">0.60 TON</b>
+    </div>
+</div>
+
+<button class="main-btn" onclick="initOrder()">Купить Звёзды</button>
 
 <script>
-    const MY_WALLET = "UQATIzX89EOOTqfsr8KE64MXvVSa4CGybjwmkPv3-yHbI3ZE"; // Твой кошелек
+    const MY_WALLET = "UQATIzX89EOOTqfsr8KE64MXvVSa4CGybjwmkPv3-yHbI3ZE";
     const tg = window.Telegram.WebApp;
+    
     const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
         manifestUrl: 'https://rocket-multiplayer.vercel.app/tonconnect-manifest.json',
         buttonRootId: 'ton-connect-button'
     });
 
     function recalc(val) {
-        const price = (val * 0.012).toFixed(2); // Твой курс (например 0.012 TON за 1 звезду)
+        if (val < 0) val = 0;
+        const price = (val * 0.012).toFixed(2);
         document.getElementById('final-price').innerText = price + " TON";
     }
 
     function updateUser(val) {
         const display = document.getElementById('user-display');
         const name = document.getElementById('display-name');
+        const status = document.getElementById('display-status');
         if (val.length > 2) {
             display.style.opacity = "1";
             name.innerText = val.startsWith('@') ? val : '@' + val;
+            status.innerText = "Готов к отправке";
         } else {
             display.style.opacity = "0.3";
+            status.innerText = "Введите @username";
         }
     }
 
-    function applyPreset(v) {
-        document.getElementById('star-count').value = v;
-        recalc(v);
+    function applyPreset(val) {
+        document.getElementById('star-count').value = val;
+        recalc(val);
         document.getElementById('presets').classList.remove('active');
+        tg.HapticFeedback.selectionChanged();
     }
 
     async function initOrder() {
@@ -124,21 +218,34 @@
         const stars = document.getElementById('star-count').value;
         const price = (stars * 0.012).toFixed(2);
 
-        if (!user) { tg.showAlert("Введите никнейм!"); return; }
-        if (!tonConnectUI.connected) { tg.showAlert("Подключите кошелек!"); return; }
+        if (!user || user.length < 3) {
+            tg.showAlert("Сначала введите верный никнейм!");
+            return;
+        }
+
+        if (!tonConnectUI.connected) {
+            tg.showAlert("Пожалуйста, подключите кошелек кнопкой сверху!");
+            return;
+        }
+
+        // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Переводим TON в нано-тоны как целое число
+        const nanoAmount = Math.floor(parseFloat(price) * 1000000000).toString();
 
         try {
-            const tx = await tonConnectUI.sendTransaction({
+            const transaction = {
                 validUntil: Math.floor(Date.now() / 1000) + 600,
                 messages: [{
                     address: MY_WALLET,
-                    amount: (price * 1000000000).toString(),
-                    payload: "" // Можно оставить пустым
+                    amount: nanoAmount,
                 }]
-            });
+            };
 
-            // Если транзакция прошла успешно, отправляем уведомление тебе в бота
-            if (tx) {
+            const result = await tonConnectUI.sendTransaction(transaction);
+
+            if (result) {
+                tg.showAlert("Оплата прошла успешно! Звезды будут отправлены в течение 15 мин.");
+                
+                // Уведомление в твой бэкенд
                 fetch('/api/notify-admin', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -149,9 +256,11 @@
                         sender: tonConnectUI.account.address
                     })
                 });
-                tg.showAlert("Оплата прошла! Ожидайте звезды в течение 15 минут.");
             }
-        } catch (e) { console.error(e); }
+        } catch (e) {
+            console.error(e);
+            tg.showAlert("Транзакция отклонена или произошла ошибка сети.");
+        }
     }
 </script>
 </body>
