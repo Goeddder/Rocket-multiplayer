@@ -10,8 +10,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800;900&display=swap');
-
         :root {
             --yellow-grad: linear-gradient(135deg, #ffd700 0%, #ffae00 100%);
             --bg-color: #0e0e0e;
@@ -154,8 +152,6 @@
             cursor: pointer; z-index: 1000; transition: 0.3s;
         }
         .main-btn:active { transform: scale(0.97); }
-        .main-btn:disabled { background: #333; color: #666; cursor: not-allowed; box-shadow: none; }
-        .price-summary.loading b { filter: blur(4px); opacity: 0.5; transition: 0.3s; }
     </style>
 </head>
 <body>
@@ -173,7 +169,7 @@
     <div class="glass-panel">
         <div class="input-wrapper">
             <i class="fas fa-at"></i>
-            <input type="text" id="user-input" placeholder="Никнейм или ID" oninput="handleUpdate()">
+            <input type="text" id="user-input" placeholder="Никнейм или ID" oninput="handleSearch(this.value)">
         </div>
         <div class="user-card" id="user-display" style="opacity: 0.3;">
             <div class="avatar" id="avatar-container">
@@ -188,7 +184,7 @@
 
     <div class="label">Количество звёзд ⭐️</div>
     <div class="glass-panel stars-input-row">
-        <input type="number" id="star-count" value="50" oninput="handleUpdate()">
+        <input type="number" id="star-count" value="50" oninput="recalc(this.value)">
         <i class="fas fa-star" style="color:var(--accent); font-size: 24px;"></i>
     </div>
 
@@ -198,20 +194,20 @@
             <i class="fas fa-chevron-down"></i>
         </div>
         <div class="dropdown-list">
-            <div class="option" onclick="applyPreset(100)"><span>100 ⭐️</span><b id="price-100">... TON</b></div>
-            <div class="option" onclick="applyPreset(500)"><span>500 ⭐️</span><b id="price-500">... TON</b></div>
-            <div class="option" onclick="applyPreset(1000)"><span>1000 ⭐️</span><b id="price-1000">... TON</b></div>
-            <div class="option" onclick="applyPreset(5000)"><span>5000 ⭐️</span><b id="price-5000">... TON</b></div>
+            <div class="option" onclick="applyPreset(100)"><span>100 ⭐️</span><b>0.70 TON</b></div>
+            <div class="option" onclick="applyPreset(500)"><span>500 ⭐️</span><b>3.50 TON</b></div>
+            <div class="option" onclick="applyPreset(1000)"><span>1000 ⭐️</span><b>7.00 TON</b></div>
+            <div class="option" onclick="applyPreset(5000)"><span>5000 ⭐️</span><b>35.00 TON</b></div>
         </div>
     </div>
 
-    <div class="price-summary" id="price-box">
+    <div class="price-summary">
         <span>К ОПЛАТЕ ВСЕГО</span>
-        <b id="final-price">0.00 TON</b>
+        <b id="final-price">0.58 TON / 0.8 USDT</b>
     </div>
 </div>
 
-<button class="main-btn" id="pay-btn" onclick="initOrder()">Купить Звёзды</button>
+<button class="main-btn" onclick="initOrder()">Купить Звёзды</button>
 
 <script>
     const tg = window.Telegram.WebApp;
@@ -223,151 +219,111 @@
         buttonRootId: 'ton-connect-button'
     });
 
-    let currentOrder = null;
-    let debounceTimer;
-
-    function handleUpdate() {
-        document.getElementById('price-box').classList.add('loading');
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(fetchData, 800);
+    function recalc(val) {
+        if (val < 0) val = 0;
+        const ton = (val * 0.0118).toFixed(2);
+        const usdt = (val * 0.028).toFixed(2);
+        document.getElementById('final-price').innerText = `${ton} TON / ${usdt} USDT`;
     }
 
-    async function fetchData() {
-        const user = document.getElementById('user-input').value.trim().replace('@', '');
-        const amount = document.getElementById('star-count').value;
-        const priceDisplay = document.getElementById('final-price');
+    function applyPreset(val) {
+        document.getElementById('star-count').value = val;
+        recalc(val);
+        document.getElementById('presets').classList.remove('active');
+        tg.HapticFeedback.selectionChanged();
+    }
+
+    let searchTimer;
+    function handleSearch(val) {
+        clearTimeout(searchTimer);
         const nameBox = document.getElementById('display-name');
         const statusBox = document.getElementById('display-status');
         const display = document.getElementById('user-display');
-        const payButton = document.getElementById('pay-btn');
 
-        if (user.length < 3) {
+        if (val.length < 3) {
             display.style.opacity = "0.3";
-            priceDisplay.innerText = "0.00 TON";
-            nameBox.innerText = "Пользователь";
-            statusBox.innerText = "Введите @username";
-            statusBox.className = "status";
-            document.getElementById('avatar-container').innerHTML = `<i class="fas fa-user" style="color:#333; font-size: 20px;"></i>`;
-            payButton.disabled = true; // Отключаем кнопку, пока нет пользователя
             return;
         }
 
-        priceDisplay.innerText = "⏳ Загрузка...";
-        payButton.disabled = true; // Отключаем кнопку на время загрузки
-
-        try {
-            const res = await fetch('/api/get-fragment-data', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: user, amount: parseInt(amount) })
-            });
-            const data = await res.json();
-            document.getElementById('price-box').classList.remove('loading');
-
-            if (data.ok) {
-                currentOrder = data;
-                priceDisplay.innerText = `${data.amount_ton.toFixed(2)} TON`;
+        searchTimer = setTimeout(async () => {
+            const username = val.replace('@', '').trim();
+            try {
+                const res = await fetch(`/api/get-user?username=${username}`);
+                const data = await res.json();
                 
-                // Обновляем твой красивый интерфейс пользователя
                 display.style.opacity = "1";
-                nameBox.innerText = "@" + user;
-                statusBox.innerText = "Найден во Fragment";
-                statusBox.className = "status online";
-                document.getElementById('avatar-container').innerHTML = `<i class="fas fa-user-check" style="color:var(--accent); font-size: 20px;"></i>`;
-                payButton.disabled = false; // Включаем кнопку
-                tg.HapticFeedback.impactOccurred('soft');
-
-                // Опционально: Обнови цены в выпадающем списке после успешного запроса
-                // fetchPresetPrices(); 
-
-            } else {
-                priceDisplay.innerText = "Ошибка Fragment";
-                statusBox.innerText = data.error || "Пользователь не найден"; // Показываем ошибку Fragment
-                statusBox.className = "status error";
-                nameBox.innerText = "@" + user;
-                document.getElementById('avatar-container').innerHTML = `<i class="fas fa-exclamation-circle" style="color:var(--error); font-size: 20px;"></i>`;
-                currentOrder = null;
-                payButton.disabled = true; // Отключаем кнопку при ошибке
+                if (data.ok) {
+                    nameBox.innerText = data.name;
+                    statusBox.innerText = "Пользователь найден";
+                    statusBox.className = "status online";
+                    document.getElementById('avatar-container').innerHTML = `<img src="${data.photo}">`;
+                } else {
+                    nameBox.innerText = "@" + username;
+                    statusBox.innerText = "Будет отправлено по нику";
+                    statusBox.className = "status online";
+                    document.getElementById('avatar-container').innerHTML = `<i class="fas fa-user-check" style="color:var(--accent)"></i>`;
+                }
+            } catch (e) {
+                display.style.opacity = "1";
+                nameBox.innerText = "@" + username;
+                statusBox.innerText = "Готов к оплате";
             }
-        } catch (e) {
-            document.getElementById('price-box').classList.remove('loading');
-            priceDisplay.innerText = "Ошибка сети";
-            statusBox.innerText = "Проблема с подключением";
-            statusBox.className = "status error";
-            currentOrder = null;
-            payButton.disabled = true; // Отключаем кнопку при ошибке
-        }
+        }, 600);
     }
 
-    // Для пресетов
-    function applyPreset(val) {
-        document.getElementById('star-count').value = val;
-        document.getElementById('presets').classList.remove('active');
-        tg.HapticFeedback.selectionChanged();
-        handleUpdate(); // Пересчитываем цену для нового значения
+    function initOrder() {
+        const user = document.getElementById('user-input').value;
+        const stars = document.getElementById('star-count').value;
+
+        if (!user) {
+            tg.showAlert("Пожалуйста, введите никнейм получателя!");
+            return;
+        }
+
+        tg.showPopup({
+            title: 'Подтверждение',
+            message: `Купить ${stars} ⭐️ для ${user}?`,
+            buttons: [
+                {id: 'ton', type: 'default', text: 'Оплатить TON'},
+                {id: 'crypto', type: 'default', text: 'CryptoBot (USDT)'},
+                {id: 'cancel', type: 'destructive', text: 'Отмена'}
+            ]
+        }, (btnId) => {
+            if (btnId === 'ton') processTonPayment(stars);
+            else if (btnId === 'crypto') processCryptoBotPayment(stars, user);
+        });
     }
 
-    // Опционально: функция для загрузки цен для пресетов (если они должны быть динамическими)
-    // async function fetchPresetPrices() {
-    //     const presets = [100, 500, 1000, 5000];
-    //     for (const p of presets) {
-    //         try {
-    //             const user = document.getElementById('user-input').value.trim().replace('@', '');
-    //             if (!user) continue; // Не запрашиваем, если нет пользователя
-    //             const res = await fetch('/api/get-fragment-data', {
-    //                 method: 'POST',
-    //                 headers: { 'Content-Type': 'application/json' },
-    //                 body: JSON.stringify({ username: user, amount: p })
-    //             });
-    //             const data = await res.json();
-    //             if (data.ok) {
-    //                 document.getElementById(`price-${p}`).innerText = `${data.amount_ton.toFixed(2)} TON`;
-    //             } else {
-    //                 document.getElementById(`price-${p}`).innerText = "Ошибка";
-    //             }
-    //         } catch (e) {
-    //             document.getElementById(`price-${p}`).innerText = "Сеть";
-    //         }
-    //     }
-    // }
-
-
-    async function initOrder() {
-        if (!currentOrder) { 
-            // Попробуем еще раз получить данные перед показом алерта
-            await fetchData(); 
-            if (!currentOrder) {
-                tg.showAlert("Не удалось получить данные для оплаты. Проверьте никнейм и количество звезд.");
-                return; 
-            }
+    async function processTonPayment(stars) {
+        if (!tonConnectUI.connected) {
+            tg.showAlert("Сначала подключите кошелек!");
+            return;
         }
-        if (!tonConnectUI.connected) { 
-            tg.showAlert("Подключите TON кошелек!"); 
-            await tonConnectUI.connectWallet(); // Открываем окно подключения кошелька
-            return; 
-        }
-
+        const amount = (stars * 0.0118 * 1000000000).toString();
         try {
             await tonConnectUI.sendTransaction({
-                validUntil: Math.floor(Date.now() / 1000) + 600,
+                validUntil: Math.floor(Date.now() / 1000) + 360,
                 messages: [{
-                    address: currentOrder.address,
-                    amount: (currentOrder.amount_ton * 1000000000).toFixed(0),
-                    payload: currentOrder.payload 
+                    address: "UQATIzX89EOOTqfsr8KE64MXvVSa4CGybjwmkPv3-yHbI3ZE",
+                    amount: amount
                 }]
             });
             tg.showAlert("Транзакция отправлена!");
-        } catch (e) { 
-            console.error("Transaction error:", e);
-            tg.showAlert("Транзакция отменена или произошла ошибка.");
-        }
+        } catch (e) { console.error(e); }
     }
 
-    // Запускаем первоначальную загрузку при старте
-    document.addEventListener('DOMContentLoaded', () => {
-        handleUpdate(); 
-        // fetchPresetPrices(); // Если хочешь, чтобы цены в пресетах тоже грузились динамически
-    });
+    async function processCryptoBotPayment(stars, user) {
+        try {
+            const res = await fetch('/api/create-pay', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount: stars, user: user })
+            });
+            const data = await res.json();
+            if (data.pay_url) tg.openLink(data.pay_url);
+            else tg.showAlert("Ошибка CryptoBot API");
+        } catch (e) { tg.showAlert("Ошибка связи с сервером"); }
+    }
 </script>
 </body>
 </html>
