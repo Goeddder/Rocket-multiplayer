@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800;900&display=swap');
+
         :root {
             --yellow-grad: linear-gradient(135deg, #ffd700 0%, #ffae00 100%);
             --bg-color: #0e0e0e;
@@ -21,64 +23,139 @@
 
         body {
             margin: 0; padding: 0;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: var(--bg-color);
-            background-image: radial-gradient(circle at 90% 10%, rgba(255, 204, 51, 0.15), transparent);
+            background-image: 
+                radial-gradient(circle at 90% 10%, rgba(255, 204, 51, 0.15), transparent),
+                radial-gradient(circle at 10% 90%, rgba(20, 20, 20, 1), transparent);
             color: var(--text-main);
             display: flex; flex-direction: column; align-items: center;
-            min-height: 100vh; overflow-x: hidden;
+            min-height: 100vh;
+            overflow-x: hidden;
         }
 
-        #ton-connect-button { margin: 15px 15px 0 auto; z-index: 100; }
+        #ton-connect-button {
+            margin-top: 15px;
+            align-self: flex-end;
+            margin-right: 15px;
+            z-index: 100;
+        }
 
-        .container { width: 90%; max-width: 420px; padding-bottom: 140px; animation: fadeIn 0.8s ease-out; }
+        .container {
+            width: 90%;
+            max-width: 420px;
+            padding-bottom: 140px;
+            animation: fadeIn 0.8s ease-out;
+        }
+
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         .header { text-align: center; margin: 10px 0 30px 0; }
         .header i.star-logo { 
-            font-size: 65px; background: var(--yellow-grad);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            font-size: 65px; 
+            background: var(--yellow-grad);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
             filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.5));
             animation: pulse 3s infinite ease-in-out;
         }
-        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
 
-        .label { font-size: 11px; color: #888; margin: 25px 0 10px 10px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.08); } 100% { transform: scale(1); } }
+
+        .header h1 { margin: 15px 0 5px 0; font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+        .header p { color: #888; font-size: 14px; margin: 0; }
+
+        .label {
+            font-size: 11px;
+            color: #888;
+            margin: 25px 0 10px 10px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 700;
+        }
 
         .glass-panel {
-            background: var(--card-bg); border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 24px; padding: 20px; backdrop-filter: blur(20px);
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 20px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
 
-        .input-wrapper { display: flex; align-items: center; gap: 15px; }
-        .input-wrapper input { background: transparent; border: none; color: white; font-size: 17px; outline: none; width: 100%; font-weight: 500; }
+        .input-wrapper { display: flex; align-items: center; gap: 15px; margin-bottom: 5px; }
+        .input-wrapper i { color: var(--accent); font-size: 20px; }
+        .input-wrapper input {
+            background: transparent; border: none; color: white;
+            font-size: 17px; outline: none; width: 100%;
+            font-weight: 500;
+        }
 
         .user-card {
-            display: flex; align-items: center; gap: 15px; margin-top: 15px; padding-top: 15px;
-            border-top: 1px solid rgba(255, 255, 255, 0.08); transition: 0.4s;
+            display: flex; align-items: center; gap: 15px;
+            margin-top: 15px; padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.4s ease;
         }
-        .avatar { width: 50px; height: 50px; border-radius: 50%; background: #1a1a1a; border: 2px solid var(--accent); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .avatar {
+            width: 50px; height: 50px; border-radius: 50%;
+            background: #1a1a1a; border: 2px solid var(--accent);
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden; box-shadow: 0 0 15px rgba(255, 204, 51, 0.2);
+        }
         .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .user-info .name { font-weight: 800; font-size: 17px; }
+        .user-info .status { font-size: 13px; color: #777; }
         .status.online { color: var(--accent); }
+        .status.error { color: var(--error); }
 
         .stars-input-row { display: flex; align-items: center; justify-content: space-between; }
-        .stars-input-row input { background: transparent; border: none; color: var(--accent); font-size: 34px; font-weight: 900; outline: none; width: 70%; }
+        .stars-input-row input {
+            background: transparent; border: none; color: var(--accent);
+            font-size: 34px; font-weight: 900; outline: none; width: 70%;
+        }
 
         .dropdown { margin-top: 12px; }
-        .dropdown-header { background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 14px 20px; display: flex; justify-content: space-between; cursor: pointer; color: #aaa; }
-        .dropdown-list { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; background: rgba(20, 20, 20, 0.6); }
-        .dropdown.active .dropdown-list { max-height: 300px; border: 1px solid rgba(255, 255, 255, 0.08); border-top: none; border-radius: 0 0 16px 16px; }
+        .dropdown-header {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px; padding: 14px 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            cursor: pointer; color: #aaa; font-size: 14px;
+        }
+        .dropdown-list {
+            max-height: 0; overflow: hidden; transition: max-height 0.3s ease;
+            background: rgba(20, 20, 20, 0.6); border-radius: 0 0 16px 16px;
+        }
+        .dropdown.active .dropdown-list { max-height: 300px; border: 1px solid rgba(255, 255, 255, 0.08); border-top: none; }
         .dropdown.active .dropdown-header { border-radius: 16px 16px 0 0; }
 
-        .option { padding: 14px 20px; display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .option {
+            padding: 14px 20px; display: flex; justify-content: space-between;
+            border-bottom: 1px solid rgba(255,255,255,0.05); transition: 0.2s;
+        }
+        .option:active { background: rgba(255, 204, 51, 0.1); }
         .option b { color: var(--accent); }
 
-        .price-summary { margin-top: 30px; text-align: center; padding: 25px; background: rgba(255, 215, 0, 0.05); border-radius: 28px; border: 1px dashed var(--accent); }
-        .price-summary b { color: var(--accent); font-size: 28px; font-weight: 900; }
+        .price-summary {
+            margin-top: 30px; text-align: center; padding: 25px;
+            background: linear-gradient(to bottom, rgba(255, 215, 0, 0.07), transparent);
+            border-radius: 28px; border: 1px dashed var(--accent);
+        }
+        .price-summary span { color: #888; font-size: 14px; display: block; margin-bottom: 5px; }
+        .price-summary b { color: var(--accent); font-size: 28px; font-weight: 900; letter-spacing: -1px; }
 
-        .main-btn { position: fixed; bottom: 30px; width: 90%; max-width: 390px; background: var(--yellow-grad); color: #000; border: none; padding: 22px; border-radius: 24px; font-size: 18px; font-weight: 800; z-index: 1000; }
-        .loading b { filter: blur(4px); opacity: 0.5; }
+        .main-btn {
+            position: fixed; bottom: 30px; width: 90%; max-width: 390px;
+            background: var(--yellow-grad); color: #000; border: none;
+            padding: 22px; border-radius: 24px; font-size: 18px; font-weight: 800;
+            box-shadow: 0 15px 35px rgba(255, 174, 0, 0.35);
+            cursor: pointer; z-index: 1000; transition: 0.3s;
+        }
+        .main-btn:active { transform: scale(0.97); }
+        .main-btn:disabled { background: #333; color: #666; cursor: not-allowed; box-shadow: none; }
+        .price-summary.loading b { filter: blur(4px); opacity: 0.5; transition: 0.3s; }
     </style>
 </head>
 <body>
@@ -95,11 +172,13 @@
     <div class="label">Получатель подарка</div>
     <div class="glass-panel">
         <div class="input-wrapper">
-            <i class="fas fa-at" style="color:var(--accent)"></i>
+            <i class="fas fa-at"></i>
             <input type="text" id="user-input" placeholder="Никнейм или ID" oninput="handleUpdate()">
         </div>
         <div class="user-card" id="user-display" style="opacity: 0.3;">
-            <div class="avatar" id="avatar-container"><i class="fas fa-user" style="color:#333"></i></div>
+            <div class="avatar" id="avatar-container">
+                <i class="fas fa-user" style="color:#333; font-size: 20px;"></i>
+            </div>
             <div class="user-info">
                 <div class="name" id="display-name">Пользователь</div>
                 <div class="status" id="display-status">Введите @username</div>
@@ -119,9 +198,10 @@
             <i class="fas fa-chevron-down"></i>
         </div>
         <div class="dropdown-list">
-            <div class="option" onclick="applyPreset(100)"><span>100 ⭐️</span><b>Пакет 1</b></div>
-            <div class="option" onclick="applyPreset(500)"><span>500 ⭐️</span><b>Пакет 2</b></div>
-            <div class="option" onclick="applyPreset(1000)"><span>1000 ⭐️</span><b>Пакет 3</b></div>
+            <div class="option" onclick="applyPreset(100)"><span>100 ⭐️</span><b id="price-100">... TON</b></div>
+            <div class="option" onclick="applyPreset(500)"><span>500 ⭐️</span><b id="price-500">... TON</b></div>
+            <div class="option" onclick="applyPreset(1000)"><span>1000 ⭐️</span><b id="price-1000">... TON</b></div>
+            <div class="option" onclick="applyPreset(5000)"><span>5000 ⭐️</span><b id="price-5000">... TON</b></div>
         </div>
     </div>
 
@@ -131,11 +211,12 @@
     </div>
 </div>
 
-<button class="main-btn" onclick="initOrder()">Купить Звёзды</button>
+<button class="main-btn" id="pay-btn" onclick="initOrder()">Купить Звёзды</button>
 
 <script>
     const tg = window.Telegram.WebApp;
     tg.expand();
+    tg.ready();
 
     const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
         manifestUrl: 'https://rocket-multiplayer.vercel.app/tonconnect-manifest.json',
@@ -143,68 +224,127 @@
     });
 
     let currentOrder = null;
-    let timer;
+    let debounceTimer;
 
     function handleUpdate() {
         document.getElementById('price-box').classList.add('loading');
-        clearTimeout(timer);
-        timer = setTimeout(fetchData, 800);
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(fetchData, 800);
     }
 
     async function fetchData() {
-        const u = document.getElementById('user-input').value.trim().replace('@', '');
-        const a = document.getElementById('star-count').value;
-        const disp = document.getElementById('final-price');
-        const priceBox = document.getElementById('price-box');
+        const user = document.getElementById('user-input').value.trim().replace('@', '');
+        const amount = document.getElementById('star-count').value;
+        const priceDisplay = document.getElementById('final-price');
+        const nameBox = document.getElementById('display-name');
+        const statusBox = document.getElementById('display-status');
+        const display = document.getElementById('user-display');
+        const payButton = document.getElementById('pay-btn');
 
-        if (u.length < 3) {
-            priceBox.classList.remove('loading');
+        if (user.length < 3) {
+            display.style.opacity = "0.3";
+            priceDisplay.innerText = "0.00 TON";
+            nameBox.innerText = "Пользователь";
+            statusBox.innerText = "Введите @username";
+            statusBox.className = "status";
+            document.getElementById('avatar-container').innerHTML = `<i class="fas fa-user" style="color:#333; font-size: 20px;"></i>`;
+            payButton.disabled = true; // Отключаем кнопку, пока нет пользователя
             return;
         }
+
+        priceDisplay.innerText = "⏳ Загрузка...";
+        payButton.disabled = true; // Отключаем кнопку на время загрузки
 
         try {
-            // Используем относительный путь для Vercel
-            const r = await fetch('/api/get-fragment-data', {
+            const res = await fetch('/api/get-fragment-data', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: u, amount: parseInt(a) })
+                body: JSON.stringify({ username: user, amount: parseInt(amount) })
             });
-            const d = await r.json();
-            priceBox.classList.remove('loading');
+            const data = await res.json();
+            document.getElementById('price-box').classList.remove('loading');
 
-            if (d.ok) {
-                currentOrder = d;
-                disp.innerText = d.amount_ton.toFixed(2) + " TON";
-                document.getElementById('user-display').style.opacity = "1";
-                document.getElementById('display-name').innerText = "@" + u;
-                document.getElementById('display-status').innerText = "Найден во Fragment";
-                document.getElementById('display-status').className = "status online";
-                document.getElementById('avatar-container').innerHTML = `<i class="fas fa-user-check" style="color:var(--accent)"></i>`;
+            if (data.ok) {
+                currentOrder = data;
+                priceDisplay.innerText = `${data.amount_ton.toFixed(2)} TON`;
+                
+                // Обновляем твой красивый интерфейс пользователя
+                display.style.opacity = "1";
+                nameBox.innerText = "@" + user;
+                statusBox.innerText = "Найден во Fragment";
+                statusBox.className = "status online";
+                document.getElementById('avatar-container').innerHTML = `<i class="fas fa-user-check" style="color:var(--accent); font-size: 20px;"></i>`;
+                payButton.disabled = false; // Включаем кнопку
                 tg.HapticFeedback.impactOccurred('soft');
+
+                // Опционально: Обнови цены в выпадающем списке после успешного запроса
+                // fetchPresetPrices(); 
+
             } else {
-                disp.innerText = "Ошибка";
+                priceDisplay.innerText = "Ошибка Fragment";
+                statusBox.innerText = data.error || "Пользователь не найден"; // Показываем ошибку Fragment
+                statusBox.className = "status error";
+                nameBox.innerText = "@" + user;
+                document.getElementById('avatar-container').innerHTML = `<i class="fas fa-exclamation-circle" style="color:var(--error); font-size: 20px;"></i>`;
                 currentOrder = null;
+                payButton.disabled = true; // Отключаем кнопку при ошибке
             }
         } catch (e) {
-            priceBox.classList.remove('loading');
-            disp.innerText = "Ошибка сети";
+            document.getElementById('price-box').classList.remove('loading');
+            priceDisplay.innerText = "Ошибка сети";
+            statusBox.innerText = "Проблема с подключением";
+            statusBox.className = "status error";
+            currentOrder = null;
+            payButton.disabled = true; // Отключаем кнопку при ошибке
         }
     }
 
-    function applyPreset(v) {
-        document.getElementById('star-count').value = v;
+    // Для пресетов
+    function applyPreset(val) {
+        document.getElementById('star-count').value = val;
         document.getElementById('presets').classList.remove('active');
-        handleUpdate();
+        tg.HapticFeedback.selectionChanged();
+        handleUpdate(); // Пересчитываем цену для нового значения
     }
+
+    // Опционально: функция для загрузки цен для пресетов (если они должны быть динамическими)
+    // async function fetchPresetPrices() {
+    //     const presets = [100, 500, 1000, 5000];
+    //     for (const p of presets) {
+    //         try {
+    //             const user = document.getElementById('user-input').value.trim().replace('@', '');
+    //             if (!user) continue; // Не запрашиваем, если нет пользователя
+    //             const res = await fetch('/api/get-fragment-data', {
+    //                 method: 'POST',
+    //                 headers: { 'Content-Type': 'application/json' },
+    //                 body: JSON.stringify({ username: user, amount: p })
+    //             });
+    //             const data = await res.json();
+    //             if (data.ok) {
+    //                 document.getElementById(`price-${p}`).innerText = `${data.amount_ton.toFixed(2)} TON`;
+    //             } else {
+    //                 document.getElementById(`price-${p}`).innerText = "Ошибка";
+    //             }
+    //         } catch (e) {
+    //             document.getElementById(`price-${p}`).innerText = "Сеть";
+    //         }
+    //     }
+    // }
+
 
     async function initOrder() {
-        if (!currentOrder) {
-            tg.showAlert("Сначала введите верный никнейм!");
-            return;
+        if (!currentOrder) { 
+            // Попробуем еще раз получить данные перед показом алерта
+            await fetchData(); 
+            if (!currentOrder) {
+                tg.showAlert("Не удалось получить данные для оплаты. Проверьте никнейм и количество звезд.");
+                return; 
+            }
         }
-        if (!tonConnectUI.connected) {
-            tg.showAlert("Подключите кошелек!");
-            return;
+        if (!tonConnectUI.connected) { 
+            tg.showAlert("Подключите TON кошелек!"); 
+            await tonConnectUI.connectWallet(); // Открываем окно подключения кошелька
+            return; 
         }
 
         try {
@@ -216,8 +356,18 @@
                     payload: currentOrder.payload 
                 }]
             });
-        } catch (e) { console.error(e); }
+            tg.showAlert("Транзакция отправлена!");
+        } catch (e) { 
+            console.error("Transaction error:", e);
+            tg.showAlert("Транзакция отменена или произошла ошибка.");
+        }
     }
+
+    // Запускаем первоначальную загрузку при старте
+    document.addEventListener('DOMContentLoaded', () => {
+        handleUpdate(); 
+        // fetchPresetPrices(); // Если хочешь, чтобы цены в пресетах тоже грузились динамически
+    });
 </script>
 </body>
 </html>
