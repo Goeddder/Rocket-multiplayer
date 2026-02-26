@@ -4,7 +4,7 @@ import httpx
 app = FastAPI()
 
 # ЗАПОЛНИ ЭТИ ДАННЫЕ:
-BOT_TOKEN = "8617323759:AAGtVEQ16R8lHU9x8jZ4I5MDiEvc6d1HZGE"
+BOT_TOKEN = "8250116983:AAGGgp7aJPFF0IYBfzeoHK7cwx-hi2Zhgkk"
 ADMIN_ID = "1471307057"
 
 @app.post("/api/notify-admin")
