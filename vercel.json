@@ -1,8 +1,5 @@
 {
   "rewrites": [
-    {
-      "source": "/api/get-fragment-data",
-      "destination": "/api/get-fragment-data.py"
-    }
+    { "source": "/api/notify-admin", "destination": "/api/notify-admin.py" }
   ]
 }
