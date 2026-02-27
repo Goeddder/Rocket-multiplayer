@@ -204,7 +204,6 @@
 
     function recalc(val) {
         if (val < 0) val = 0;
-        // Твоя формула цены: 1 звезда = 0.012 TON (примерно)
         const price = (val * 0.0115).toFixed(2);
         document.getElementById('final-price').innerText = price + " TON";
     }
@@ -234,11 +233,15 @@
     }
 
     async function initOrder() {
-        const user = document.getElementById('user-input').value.trim();
+        const userNick = document.getElementById('user-input').value.trim();
         const stars = document.getElementById('star-count').value;
         const priceStr = document.getElementById('final-price').innerText.split(' ')[0];
 
-        if (!user || user.length < 3) {
+        // Отримання ID клієнта з Telegram WebApp
+        const tgData = window.Telegram.WebApp.initDataUnsafe;
+        const clientId = tgData.user ? tgData.user.id : "None";
+
+        if (!userNick || userNick.length < 3) {
             tg.showAlert("Введите никнейм получателя!");
             return;
         }
@@ -269,15 +272,16 @@
                     buttons: [{type: 'close'}]
                 });
                 
-                // Уведомление твоего бэкенда (Python бота)
+                // Надсилаємо дані на бкенд разом з ID клієнта
                 fetch('/api/notify-admin', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
-                        user_to_receive: user,
+                        user_to_receive: userNick,
                         stars: stars + " Stars",
                         amount: priceStr,
-                        sender: tonConnectUI.account.address
+                        sender: tonConnectUI.account.address,
+                        client_chat_id: clientId // Це додано
                     })
                 });
             }
