@@ -1,80 +1,295 @@
-import os
-import requests
-from flask import Flask, request, jsonify
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SkruchStarsBot — Shop</title>
+    
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
 
-app = Flask(__name__)
+        :root {
+            --yellow-grad: linear-gradient(135deg, #ffd700 0%, #ffae00 100%);
+            --bg-color: #0e0e0e;
+            --card-bg: rgba(255, 255, 255, 0.08);
+            --accent: #ffcc33;
+            --text-main: #ffffff;
+        }
 
-BOT_TOKEN = "8250116983:AAGGgp7aJPFF0IYBfzeoHK7cwx-hi2Zhgkk"
-ADMIN_ID = 1471307057
+        body {
+            margin: 0; padding: 0;
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-color);
+            background-image: radial-gradient(circle at 90% 10%, rgba(255, 204, 51, 0.12), transparent);
+            color: var(--text-main);
+            display: flex; flex-direction: column; align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
 
-def send_tg(method, payload):
-    return requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/{method}", json=payload)
+        #ton-connect-button { margin: 15px 15px 0 auto; z-index: 100; }
 
-@app.route('/api/notify-admin', methods=['POST', 'GET'])
-def handle_all():
-    if request.method == 'GET':
-        return "Backend is running!"
+        .container {
+            width: 90%; max-width: 420px;
+            padding-bottom: 140px;
+            animation: fadeIn 0.6s ease-out;
+        }
 
-    data = request.json
-    if not data: return jsonify({"ok": False})
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-    if "message" in data:
-        msg = data["message"]
-        chat_id = msg["chat"]["id"]
+        .header { text-align: center; margin: 10px 0 30px 0; }
+        .header h1 { margin: 5px 0; font-weight: 900; letter-spacing: -1px; }
+        .header i.star-logo { 
+            font-size: 70px; background: var(--yellow-grad);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.4));
+            animation: pulse 3s infinite ease-in-out;
+        }
+
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+
+        .label {
+            font-size: 11px; color: #888;
+            margin: 25px 0 10px 12px;
+            text-transform: uppercase; letter-spacing: 1.2px; font-weight: 700;
+        }
+
+        .glass-panel {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px; padding: 20px;
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+        }
+
+        .input-wrapper { display: flex; align-items: center; gap: 12px; }
+        .input-wrapper input {
+            background: transparent; border: none; color: white;
+            font-size: 18px; outline: none; width: 100%; font-weight: 500;
+        }
+
+        .user-card {
+            display: flex; align-items: center; gap: 15px;
+            margin-top: 15px; padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            transition: 0.3s;
+        }
+
+        .avatar {
+            width: 48px; height: 48px; border-radius: 50%;
+            background: #1a1a1a; border: 2px solid var(--accent);
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .stars-input-row { display: flex; align-items: center; justify-content: space-between; }
+        .stars-input-row input {
+            background: transparent; border: none; color: var(--accent);
+            font-size: 36px; font-weight: 900; outline: none; width: 70%;
+        }
+
+        .dropdown { margin-top: 12px; position: relative; }
+        .dropdown-header {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px; padding: 14px 20px;
+            display: flex; justify-content: space-between; cursor: pointer; color: #ccc;
+        }
+
+        .dropdown-list {
+            position: absolute; width: 100%; z-index: 10;
+            max-height: 0; overflow: hidden; transition: max-height 0.3s ease;
+            background: #1c1c1c; border-radius: 0 0 16px 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .dropdown.active .dropdown-list { max-height: 250px; border: 1px solid rgba(255, 255, 255, 0.1); border-top: none; }
+        .dropdown.active .dropdown-header { border-radius: 16px 16px 0 0; }
+
+        .option {
+            padding: 14px 20px; display: flex; justify-content: space-between;
+            border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer;
+        }
+        .option:hover { background: rgba(255, 255, 255, 0.05); }
+
+        .price-summary {
+            margin-top: 30px; text-align: center; padding: 25px;
+            border-radius: 28px; border: 1px dashed var(--accent);
+            background: rgba(255, 204, 51, 0.04);
+        }
+        .price-summary span { font-size: 13px; color: #888; }
+        .price-summary b { color: var(--accent); font-size: 32px; font-weight: 900; display: block; margin-top: 5px; }
+
+        .main-btn {
+            position: fixed; bottom: 30px; width: 90%; max-width: 390px;
+            background: var(--yellow-grad); color: #000; border: none;
+            padding: 20px; border-radius: 22px; font-size: 19px; font-weight: 800;
+            box-shadow: 0 12px 30px rgba(255, 174, 0, 0.3);
+            cursor: pointer; transition: 0.2s; z-index: 1000;
+        }
+        .main-btn:active { transform: scale(0.96); opacity: 0.9; }
+    </style>
+</head>
+<body>
+
+<div id="ton-connect-button"></div>
+
+<div class="header">
+    <i class="fas fa-star star-logo"></i>
+    <h1>SkruchStarsBot</h1>
+    <p>Мгновенная доставка Stars</p>
+</div>
+
+<div class="container">
+    <div class="label">Получатель</div>
+    <div class="glass-panel">
+        <div class="input-wrapper">
+            <i class="fas fa-at" style="color:var(--accent)"></i>
+            <input type="text" id="user-input" placeholder="nickname" oninput="updateUser(this.value)">
+        </div>
+        <div class="user-card" id="user-display" style="opacity: 0.3;">
+            <div class="avatar"><i class="fas fa-user" style="color:var(--accent)"></i></div>
+            <div class="user-info">
+                <div id="display-name" style="font-weight:700">Пользователь</div>
+                <div id="display-status" style="font-size:12px;color:#666">Введите никнейм</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="label">Количество</div>
+    <div class="glass-panel stars-input-row">
+        <input type="number" id="star-count" value="100" oninput="recalc(this.value)">
+        <i class="fas fa-star" style="color:var(--accent)"></i>
+    </div>
+
+    <div class="dropdown" id="presets">
+        <div class="dropdown-header" onclick="toggleDropdown()">
+            <span>Выбрать готовый пакет</span>
+            <i class="fas fa-chevron-down"></i>
+        </div>
+        <div class="dropdown-list">
+            <div class="option" onclick="applyPreset(100, 1.20)"><span>100 ⭐️</span><b>1.20 TON</b></div>
+            <div class="option" onclick="applyPreset(500, 5.90)"><span>500 ⭐️</span><b>5.90 TON</b></div>
+            <div class="option" onclick="applyPreset(1000, 11.50)"><span>1000 ⭐️</span><b>11.50 TON</b></div>
+            <div class="option" onclick="applyPreset(5000, 55.00)"><span>5000 ⭐️</span><b>55.00 TON</b></div>
+        </div>
+    </div>
+
+    <div class="price-summary">
+        <span>К ОПЛАТЕ</span>
+        <b id="final-price">1.20 TON</b>
+    </div>
+</div>
+
+<button class="main-btn" onclick="initOrder()">Оплатить через TON</button>
+
+<script>
+    const MY_WALLET = "UQATIzX89EOOTqfsr8KE64MXvVSa4CGybjwmkPv3-yHbI3ZE";
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+    tg.enableClosingConfirmation();
+
+    const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+        manifestUrl: 'https://rocket-multiplayer.vercel.app/tonconnect-manifest.json',
+        buttonRootId: 'ton-connect-button'
+    });
+
+    function toggleDropdown() {
+        document.getElementById('presets').classList.toggle('active');
+        tg.HapticFeedback.selectionChanged();
+    }
+
+    function recalc(val) {
+        if (val < 0) val = 0;
+        const price = (val * 0.0115).toFixed(2);
+        document.getElementById('final-price').innerText = price + " TON";
+    }
+
+    function updateUser(val) {
+        const display = document.getElementById('user-display');
+        const name = document.getElementById('display-name');
+        const status = document.getElementById('display-status');
+        const clean = val.replace('@', '').trim();
         
-        # Отримуємо нікнейм або ім'я
-        username = msg.get("from", {}).get("username")
-        user_mention = f"@{username}" if username else msg.get("from", {}).get("first_name", "Клиент")
+        if (clean.length >= 3) {
+            display.style.opacity = "1";
+            name.innerText = "@" + clean;
+            status.innerText = "Готов к получению";
+        } else {
+            display.style.opacity = "0.3";
+            name.innerText = "Пользователь";
+            status.innerText = "Минимум 3 символа";
+        }
+    }
 
-        # 1. Обробка /start
-        if "text" in msg and msg["text"] == "/start":
-            welcome_text = "👋 Магазин Stars открыт! Нажми кнопку:"
-            kb = {"inline_keyboard": [[{"text": "🚀 КУПИТЬ STARS", "web_app": {"url": "https://rocket-multiplayer.vercel.app"}}]]}
-            send_tg("sendMessage", {"chat_id": chat_id, "text": welcome_text, "reply_markup": kb})
-            return jsonify({"ok": True})
+    function applyPreset(stars, price) {
+        document.getElementById('star-count').value = stars;
+        document.getElementById('final-price').innerText = price.toFixed(2) + " TON";
+        document.getElementById('presets').classList.remove('active');
+        tg.HapticFeedback.notificationOccurred('success');
+    }
 
-        # 2. ФІЛЬТР ВІДГУКІВ (Пересилаємо тільки фото або повідомлення з текстом відгуку)
-        if chat_id != ADMIN_ID:
-            # Перевіряємо, чи є в повідомленні фото або довгий текст (схожий на відгук)
-            has_photo = "photo" in msg
-            is_review = "text" in msg and len(msg["text"]) > 10
-            
-            if has_photo or is_review:
-                # Спочатку пишемо адміну від кого відгук
-                send_tg("sendMessage", {
-                    "chat_id": ADMIN_ID, 
-                    "text": f"📣 **Новый отзыв от:** {user_mention}",
-                    "parse_mode": "Markdown"
-                })
-                # Пересилаємо сам відгук (фото або текст)
-                send_tg("forwardMessage", {
-                    "chat_id": ADMIN_ID,
-                    "from_chat_id": chat_id,
-                    "message_id": msg["message_id"]
-                })
-            return jsonify({"ok": True})
+    async function initOrder() {
+        const userNick = document.getElementById('user-input').value.trim();
+        const stars = document.getElementById('star-count').value;
+        const priceStr = document.getElementById('final-price').innerText.split(' ')[0];
 
-    # 3. ЗАМОВЛЕННЯ З САЙТУ
-    if "user_to_receive" in data:
-        user = data.get('user_to_receive', 'unknown')
-        stars = data.get('stars', 'Stars')
-        price = data.get('amount', '0')
-        client_id = data.get('client_chat_id', 'None')
+        // Отримання ID клієнта з Telegram WebApp
+        const tgData = window.Telegram.WebApp.initDataUnsafe;
+        const clientId = tgData.user ? tgData.user.id : "None";
 
-        admin_text = f"💰 **НОВЫЙ ЗАКАЗ!**\n\n👤 Получатель: {user}\n💎 Товар: {stars}\n💸 Цена: {price} TON"
-        kb = {"inline_keyboard": [[{"text": "✅ ОТПРАВИЛ", "callback_data": f"done_{client_id}"}]]}
-        send_tg("sendMessage", {"chat_id": ADMIN_ID, "text": admin_text, "parse_mode": "Markdown", "reply_markup": kb})
-        return jsonify({"ok": True})
+        if (!userNick || userNick.length < 3) {
+            tg.showAlert("Введите никнейм получателя!");
+            return;
+        }
 
-    # 4. КНОПКА "ОТПРАВИЛ"
-    if "callback_query" in data:
-        cb = data["callback_query"]
-        cb_data = cb["data"]
-        if cb_data.startswith("done_"):
-            target_id = cb_data.replace("done_", "")
-            if target_id.isdigit():
-                msg_to_client = "✅ **Звёзды зачислены!**\n\nБудем благодарны за отзыв! Пришлите фото и текст **одним сообщением** 👇"
-                send_tg("sendMessage", {"chat_id": int(target_id), "text": msg_to_client, "parse_mode": "Markdown"})
-                send_tg("answerCallbackQuery", {"callback_query_id": cb["id"], "text": "Готово!"})
+        if (!tonConnectUI.connected) {
+            tg.showAlert("Подключите кошелек!");
+            return;
+        }
 
-    return jsonify({"ok": True})
+        const nanoAmount = Math.floor(parseFloat(priceStr) * 1000000000).toString();
+
+        const transaction = {
+            validUntil: Math.floor(Date.now() / 1000) + 300,
+            messages: [{
+                address: MY_WALLET,
+                amount: nanoAmount,
+            }]
+        };
+
+        try {
+            tg.HapticFeedback.impactOccurred('heavy');
+            const result = await tonConnectUI.sendTransaction(transaction);
+
+            if (result) {
+                tg.showPopup({
+                    title: "Оплата принята",
+                    message: "Ожидайте начисления звезд в течение нескольких минут.",
+                    buttons: [{type: 'close'}]
+                });
+                
+                // Надсилаємо дані на бкенд разом з ID клієнта
+                fetch('/api/notify-admin', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        user_to_receive: userNick,
+                        stars: stars + " Stars",
+                        amount: priceStr,
+                        sender: tonConnectUI.account.address,
+                        client_chat_id: clientId // Це додано
+                    })
+                });
+            }
+        } catch (e) {
+            console.error(e);
+            tg.HapticFeedback.notificationOccurred('error');
+        }
+    }
+</script>
+</body>
+</html>
