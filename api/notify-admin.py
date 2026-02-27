@@ -22,27 +22,36 @@ def handle_all():
         msg = data["message"]
         chat_id = msg["chat"]["id"]
         
+        # Отримуємо нікнейм або ім'я
+        username = msg.get("from", {}).get("username")
+        user_mention = f"@{username}" if username else msg.get("from", {}).get("first_name", "Клиент")
+
         # 1. Обробка /start
         if "text" in msg and msg["text"] == "/start":
-            welcome_text = "👋 Магазин Stars відкритий! Натисніть кнопку нижче:"
+            welcome_text = "👋 Магазин Stars открыт! Нажми кнопку:"
             kb = {"inline_keyboard": [[{"text": "🚀 КУПИТЬ STARS", "web_app": {"url": "https://rocket-multiplayer.vercel.app"}}]]}
             send_tg("sendMessage", {"chat_id": chat_id, "text": welcome_text, "reply_markup": kb})
             return jsonify({"ok": True})
 
-        # 2. ПЕРЕСИЛАННЯ ВІДГУКУ (ФОТО АБО ТЕКСТ)
+        # 2. ФІЛЬТР ВІДГУКІВ (Пересилаємо тільки фото або повідомлення з текстом відгуку)
         if chat_id != ADMIN_ID:
-            # Якщо клієнт надіслав фото (з підписом або без)
-            # Пересилаємо саме повідомлення адміну
-            send_tg("forwardMessage", {
-                "chat_id": ADMIN_ID,
-                "from_chat_id": chat_id,
-                "message_id": msg["message_id"]
-            })
+            # Перевіряємо, чи є в повідомленні фото або довгий текст (схожий на відгук)
+            has_photo = "photo" in msg
+            is_review = "text" in msg and len(msg["text"]) > 10
             
-            # Щоб бот не писав "Дякую" на кожне слово, ми можемо це закоментувати
-            # Або залишити тільки для першого повідомлення.
-            # На Vercel важко зробити затримку 1 хв без бази даних, 
-            # тому ми просто приберемо авто-відповідь клієнту, щоб він не спамив у відповідь.
+            if has_photo or is_review:
+                # Спочатку пишемо адміну від кого відгук
+                send_tg("sendMessage", {
+                    "chat_id": ADMIN_ID, 
+                    "text": f"📣 **Новый отзыв от:** {user_mention}",
+                    "parse_mode": "Markdown"
+                })
+                # Пересилаємо сам відгук (фото або текст)
+                send_tg("forwardMessage", {
+                    "chat_id": ADMIN_ID,
+                    "from_chat_id": chat_id,
+                    "message_id": msg["message_id"]
+                })
             return jsonify({"ok": True})
 
     # 3. ЗАМОВЛЕННЯ З САЙТУ
@@ -52,7 +61,7 @@ def handle_all():
         price = data.get('amount', '0')
         client_id = data.get('client_chat_id', 'None')
 
-        admin_text = f"💰 **НОВИЙ ЗАКАЗ!**\n\n👤 Клиент: {user}\n💎 Товар: {stars}\n💸 Цена: {price} TON"
+        admin_text = f"💰 **НОВЫЙ ЗАКАЗ!**\n\n👤 Получатель: {user}\n💎 Товар: {stars}\n💸 Цена: {price} TON"
         kb = {"inline_keyboard": [[{"text": "✅ ОТПРАВИЛ", "callback_data": f"done_{client_id}"}]]}
         send_tg("sendMessage", {"chat_id": ADMIN_ID, "text": admin_text, "parse_mode": "Markdown", "reply_markup": kb})
         return jsonify({"ok": True})
@@ -64,8 +73,7 @@ def handle_all():
         if cb_data.startswith("done_"):
             target_id = cb_data.replace("done_", "")
             if target_id.isdigit():
-                # Просимо надіслати ВІДГУК ОДНИМ ПОВІДОМЛЕННЯМ
-                msg_to_client = "✅ **Звёзды зачислены!**\n\nБудем благодарны за отзыв! Пожалуйста, пришлите **фото и текст одним сообщением** 👇"
+                msg_to_client = "✅ **Звёзды зачислены!**\n\nБудем благодарны за отзыв! Пришлите фото и текст **одним сообщением** 👇"
                 send_tg("sendMessage", {"chat_id": int(target_id), "text": msg_to_client, "parse_mode": "Markdown"})
                 send_tg("answerCallbackQuery", {"callback_query_id": cb["id"], "text": "Готово!"})
 
