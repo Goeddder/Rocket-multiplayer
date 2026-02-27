@@ -18,15 +18,15 @@ def handle_all():
     data = request.json
     if not data: return jsonify({"ok": False})
 
-    # --- ОБРАБОТКА КОМАНД ТЕЛЕГРАМА ---
+    # --- ОБРОБКА ПОВІДОМЛЕНЬ ВІД КОРИСТУВАЧІВ ---
     if "message" in data:
         msg = data["message"]
         chat_id = msg["chat"]["id"]
-        text = msg.get("text", "")
+        user_name = msg.get("from", {}).get("first_name", "Клиент")
 
-        if text == "/start":
-            # Ответ пользователю с кнопкой магазина
-            welcome_text = "👋 Привет! Нажми на кнопку ниже, чтобы открыть магазин:"
+        # 1. Якщо це команда /start
+        if "text" in msg and msg["text"] == "/start":
+            welcome_text = f"👋 Привет, {user_name}! Нажми на кнопку ниже, чтобы открыть магазин:"
             kb = {
                 "inline_keyboard": [[
                     {"text": "🚀 КУПИТЬ STARS", "web_app": {"url": "https://rocket-multiplayer.vercel.app"}}
@@ -35,13 +35,23 @@ def handle_all():
             send_tg("sendMessage", {"chat_id": chat_id, "text": welcome_text, "reply_markup": kb})
             return jsonify({"ok": True})
 
-    # --- ОБРАБОТКА УВЕДОМЛЕНИЙ С САЙТА ---
+        # 2. ЯКЩО КЛІЄНТ НАДІСЛАВ ФОТО (ВІДГУК)
+        if chat_id != ADMIN_ID: # Пересилаємо тільки якщо пише не адмін
+            # Пересилаємо повідомлення адміну (фото, текст, відео тощо)
+            send_tg("forwardMessage", {
+                "chat_id": ADMIN_ID,
+                "from_chat_id": chat_id,
+                "message_id": msg["message_id"]
+            })
+            # Дякуємо клієнту
+            send_tg("sendMessage", {"chat_id": chat_id, "text": "❤️ Спасибо за отзыв! Ваш фидбек передан администратору."})
+            return jsonify({"ok": True})
+
+    # --- ОБРОБКА ЗАМОВЛЕНЬ З САЙТУ ---
     if "user_to_receive" in data:
         user = data.get('user_to_receive', 'unknown')
         stars = data.get('stars', 'Stars')
         price = data.get('amount', '0')
-        
-        # Мы сохраняем chat_id клиента в callback_data кнопки админа
         client_id = data.get('client_chat_id', 'None')
 
         admin_text = f"💰 **НОВЫЙ ЗАКАЗ!**\n\n👤 Клиент: {user}\n💎 Товар: {stars}\n💸 Цена: {price} TON"
@@ -50,7 +60,7 @@ def handle_all():
         send_tg("sendMessage", {"chat_id": ADMIN_ID, "text": admin_text, "parse_mode": "Markdown", "reply_markup": kb})
         return jsonify({"ok": True})
 
-    # --- ОБРАБОТКА НАЖАТИЯ КНОПКИ "ОТПРАВИЛ" ---
+    # --- ОБРОБКА КНОПКИ "ОТПРАВИЛ" ---
     if "callback_query" in data:
         cb = data["callback_query"]
         cb_data = cb["data"]
@@ -58,7 +68,7 @@ def handle_all():
         if cb_data.startswith("done_"):
             target_id = cb_data.replace("done_", "")
             if target_id != "None" and target_id.isdigit():
-                msg_to_client = "✅ **Звезды зачислены!**\n\nБудем очень благодарны за отзыв с фото! ❤️"
+                msg_to_client = "✅ **Звезды зачислены!**\n\nБудем очень благодарны за отзыв с фото! Просто пришлите его сюда 👇"
                 send_tg("sendMessage", {"chat_id": int(target_id), "text": msg_to_client, "parse_mode": "Markdown"})
                 send_tg("answerCallbackQuery", {"callback_query_id": cb["id"], "text": "Клиент уведомлен!"})
             else:
