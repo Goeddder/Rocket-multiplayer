@@ -18,37 +18,50 @@ def handle_all():
     data = request.json
     if not data: return jsonify({"ok": False})
 
-    # 1. КОЛИ КЛІЄНТ ТИСНЕ "ОПЛАТИТИ" НА САЙТІ
+    # --- ОБРАБОТКА КОМАНД ТЕЛЕГРАМА ---
+    if "message" in data:
+        msg = data["message"]
+        chat_id = msg["chat"]["id"]
+        text = msg.get("text", "")
+
+        if text == "/start":
+            # Ответ пользователю с кнопкой магазина
+            welcome_text = "👋 Привет! Нажми на кнопку ниже, чтобы открыть магазин:"
+            kb = {
+                "inline_keyboard": [[
+                    {"text": "🚀 КУПИТЬ STARS", "web_app": {"url": "https://rocket-multiplayer.vercel.app"}}
+                ]]
+            }
+            send_tg("sendMessage", {"chat_id": chat_id, "text": welcome_text, "reply_markup": kb})
+            return jsonify({"ok": True})
+
+    # --- ОБРАБОТКА УВЕДОМЛЕНИЙ С САЙТА ---
     if "user_to_receive" in data:
         user = data.get('user_to_receive', 'unknown')
         stars = data.get('stars', 'Stars')
         price = data.get('amount', '0')
-        # Спроба отримати chat_id, якщо він переданий з сайту
-        client_chat_id = data.get('client_chat_id', '') 
-
-        text = f"💰 **НОВИЙ ЗАКАЗ!**\n\n👤 Клиент: {user}\n💎 Товар: {stars}\n💸 Цена: {price} TON"
-        # Зберігаємо ID клієнта прямо в кнопку, щоб бот знав кому відповісти
-        kb = {"inline_keyboard": [[{"text": "✅ ОТПРАВИЛ", "callback_data": f"done_{client_chat_id}"}]]}
         
-        send_tg("sendMessage", {"chat_id": ADMIN_ID, "text": text, "parse_mode": "Markdown", "reply_markup": kb})
+        # Мы сохраняем chat_id клиента в callback_data кнопки админа
+        client_id = data.get('client_chat_id', 'None')
+
+        admin_text = f"💰 **НОВЫЙ ЗАКАЗ!**\n\n👤 Клиент: {user}\n💎 Товар: {stars}\n💸 Цена: {price} TON"
+        kb = {"inline_keyboard": [[{"text": "✅ ОТПРАВИЛ", "callback_data": f"done_{client_id}"}]]}
+        
+        send_tg("sendMessage", {"chat_id": ADMIN_ID, "text": admin_text, "parse_mode": "Markdown", "reply_markup": kb})
         return jsonify({"ok": True})
 
-    # 2. КОЛИ ТИ ТИСНЕШ КНОПКУ "✅ ОТПРАВИЛ"
+    # --- ОБРАБОТКА НАЖАТИЯ КНОПКИ "ОТПРАВИЛ" ---
     if "callback_query" in data:
         cb = data["callback_query"]
         cb_data = cb["data"]
         
         if cb_data.startswith("done_"):
             target_id = cb_data.replace("done_", "")
-            
-            if target_id and target_id != "None":
-                # Надсилаємо повідомлення клієнту
+            if target_id != "None" and target_id.isdigit():
                 msg_to_client = "✅ **Звезды зачислены!**\n\nБудем очень благодарны за отзыв с фото! ❤️"
-                send_tg("sendMessage", {"chat_id": target_id, "text": msg_to_client, "parse_mode": "Markdown"})
-                
-                # Повідомляємо тебе, що все ок
+                send_tg("sendMessage", {"chat_id": int(target_id), "text": msg_to_client, "parse_mode": "Markdown"})
                 send_tg("answerCallbackQuery", {"callback_query_id": cb["id"], "text": "Клиент уведомлен!"})
             else:
-                send_tg("answerCallbackQuery", {"callback_query_id": cb["id"], "text": "Ошибка: ID клиента не найден. Напиши ему вручную."})
+                send_tg("answerCallbackQuery", {"callback_query_id": cb["id"], "text": "Ошибка: ID клиента неизвестен."})
 
     return jsonify({"ok": True})
