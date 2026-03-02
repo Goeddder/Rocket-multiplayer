@@ -14,9 +14,11 @@
 
         :root {
             --yellow-grad: linear-gradient(135deg, #ffd700 0%, #ffae00 100%);
+            --blue-grad: linear-gradient(135deg, #0088cc 0%, #0055ff 100%);
             --bg-color: #0e0e0e;
             --card-bg: rgba(255, 255, 255, 0.08);
             --accent: #ffcc33;
+            --accent-blue: #0088cc;
             --text-main: #ffffff;
         }
 
@@ -24,12 +26,18 @@
             margin: 0; padding: 0;
             font-family: 'Inter', sans-serif;
             background: var(--bg-color);
-            background-image: radial-gradient(circle at 90% 10%, rgba(255, 204, 51, 0.12), transparent);
             color: var(--text-main);
             display: flex; flex-direction: column; align-items: center;
             min-height: 100vh;
             overflow-x: hidden;
         }
+
+        .bg-glow {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; transition: 0.5s;
+        }
+        .stars-theme .bg-glow { background-image: radial-gradient(circle at 90% 10%, rgba(255, 204, 51, 0.12), transparent); }
+        .ton-theme .bg-glow { background-image: radial-gradient(circle at 90% 10%, rgba(0, 136, 255, 0.12), transparent); }
 
         #ton-connect-button { margin: 15px 15px 0 auto; z-index: 100; }
 
@@ -37,18 +45,21 @@
             width: 90%; max-width: 420px;
             padding-bottom: 140px;
             animation: fadeIn 0.6s ease-out;
+            display: none;
         }
+        .container.active { display: block; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         .header { text-align: center; margin: 10px 0 30px 0; }
         .header h1 { margin: 5px 0; font-weight: 900; letter-spacing: -1px; }
         .header i.star-logo { 
-            font-size: 70px; background: var(--yellow-grad);
+            font-size: 70px;
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.4));
             animation: pulse 3s infinite ease-in-out;
         }
+        .stars-theme .star-logo { background: var(--yellow-grad); filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.4)); }
+        .ton-theme .star-logo { background: var(--blue-grad); filter: drop-shadow(0 0 15px rgba(0, 136, 255, 0.4)); }
 
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
 
@@ -84,12 +95,14 @@
             background: #1a1a1a; border: 2px solid var(--accent);
             display: flex; align-items: center; justify-content: center;
         }
+        .ton-theme .avatar { border-color: var(--accent-blue); }
 
         .stars-input-row { display: flex; align-items: center; justify-content: space-between; }
         .stars-input-row input {
             background: transparent; border: none; color: var(--accent);
             font-size: 36px; font-weight: 900; outline: none; width: 70%;
         }
+        .ton-theme .stars-input-row input { color: var(--accent-blue); }
 
         .dropdown { margin-top: 12px; position: relative; }
         .dropdown-header {
@@ -113,37 +126,82 @@
             padding: 14px 20px; display: flex; justify-content: space-between;
             border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer;
         }
-        .option:hover { background: rgba(255, 255, 255, 0.05); }
 
         .price-summary {
             margin-top: 30px; text-align: center; padding: 25px;
             border-radius: 28px; border: 1px dashed var(--accent);
             background: rgba(255, 204, 51, 0.04);
         }
+        .ton-theme .price-summary { border-color: var(--accent-blue); background: rgba(0, 136, 204, 0.04); }
         .price-summary span { font-size: 13px; color: #888; }
         .price-summary b { color: var(--accent); font-size: 32px; font-weight: 900; display: block; margin-top: 5px; }
+        .ton-theme .price-summary b { color: var(--accent-blue); }
 
         .main-btn {
-            position: fixed; bottom: 30px; width: 90%; max-width: 390px;
+            position: fixed; bottom: 100px; width: 90%; max-width: 390px;
+            left: 50%; transform: translateX(-50%);
             background: var(--yellow-grad); color: #000; border: none;
             padding: 20px; border-radius: 22px; font-size: 19px; font-weight: 800;
             box-shadow: 0 12px 30px rgba(255, 174, 0, 0.3);
             cursor: pointer; transition: 0.2s; z-index: 1000;
         }
-        .main-btn:active { transform: scale(0.96); opacity: 0.9; }
+        .ton-theme .main-btn { background: var(--blue-grad); box-shadow: 0 12px 30px rgba(0, 136, 204, 0.3); color: white; }
+        .main-btn:active { transform: translateX(-50%) scale(0.96); opacity: 0.9; }
+
+        /* МОДАЛЬНОЕ ОКНО */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
+            display: none; justify-content: center; align-items: center; z-index: 3000;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-card {
+            width: 85%; max-width: 350px; background: #1c1c1e; border-radius: 28px;
+            padding: 25px; border: 1px solid rgba(255,255,255,0.1); text-align: center;
+            animation: modalIn 0.3s ease-out;
+        }
+        @keyframes modalIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .modal-card h2 { margin: 0 0 15px 0; color: #0088cc; }
+        .card-number {
+            background: #2c2c2e; padding: 15px; border-radius: 16px; 
+            font-size: 18px; font-weight: 700; margin: 20px 0; letter-spacing: 1px;
+            border: 1px solid #3a3a3c; position: relative; cursor: pointer;
+        }
+        .card-number:active { background: #3a3a3c; }
+        .modal-hint { font-size: 13px; color: #888; line-height: 1.5; margin-bottom: 20px; }
+        .close-modal {
+            background: #0088cc; color: white; border: none; padding: 15px;
+            width: 100%; border-radius: 16px; font-weight: 700; font-size: 16px;
+        }
+
+        /* Навигация */
+        .nav-bar {
+            position: fixed; bottom: 0; width: 100%; height: 80px;
+            background: rgba(15, 15, 15, 0.95); backdrop-filter: blur(20px);
+            display: flex; justify-content: space-around; align-items: center;
+            border-top: 1px solid rgba(255,255,255,0.1); z-index: 2000;
+        }
+        .nav-item {
+            display: flex; flex-direction: column; align-items: center;
+            color: #555; font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.3s;
+        }
+        .nav-item i { font-size: 22px; margin-bottom: 4px; }
+        .nav-item.active.st-nav { color: #ffd700; }
+        .nav-item.active.tn-nav { color: #0088cc; }
     </style>
 </head>
-<body>
+<body class="stars-theme">
 
+<div class="bg-glow"></div>
 <div id="ton-connect-button"></div>
 
-<div class="header">
-    <i class="fas fa-star star-logo"></i>
-    <h1>SkruchStarsBot</h1>
-    <p>Мгновенная доставка Stars</p>
-</div>
+<div id="stars-section" class="container active">
+    <div class="header">
+        <i class="fas fa-star star-logo"></i>
+        <h1>SkruchStarsBot</h1>
+        <p>Мгновенная доставка Stars</p>
+    </div>
 
-<div class="container">
     <div class="label">Получатель</div>
     <div class="glass-panel">
         <div class="input-wrapper">
@@ -159,7 +217,7 @@
         </div>
     </div>
 
-    <div class="label">Количество</div>
+    <div class="label">Количество (мин. 50)</div>
     <div class="glass-panel stars-input-row">
         <input type="number" id="star-count" value="100" oninput="recalc(this.value)">
         <i class="fas fa-star" style="color:var(--accent)"></i>
@@ -182,54 +240,138 @@
         <span>К ОПЛАТЕ</span>
         <b id="final-price">1.20 TON</b>
     </div>
+    <button class="main-btn" onclick="initOrder()">Оплатить через TON</button>
 </div>
 
-<button class="main-btn" onclick="initOrder()">Оплатить через TON</button>
+<div id="ton-section" class="container">
+    <div class="header">
+        <i class="fas fa-gem star-logo"></i>
+        <h1>SkruchStarsBot</h1>
+        <p>Купить TON за ГРН</p>
+    </div>
+
+    <div class="label">Ваш кошелек (UQ...)</div>
+    <div class="glass-panel">
+        <div class="input-wrapper">
+            <i class="fas fa-wallet" style="color:var(--accent-blue)"></i>
+            <input type="text" id="wallet-input" placeholder="Введите адрес">
+        </div>
+    </div>
+
+    <div class="label">Количество (мин. 1 TON)</div>
+    <div class="glass-panel stars-input-row">
+        <input type="number" id="ton-buy-count" value="10" oninput="recalcUAH(this.value)">
+        <i class="fas fa-gem" style="color:var(--accent-blue)"></i>
+    </div>
+
+    <div class="price-summary">
+        <span>К ОПЛАТЕ</span>
+        <b id="final-uah">2150.00 ГРН</b>
+    </div>
+    <button class="main-btn" onclick="openUahModal()">Оплатить картой</button>
+</div>
+
+<div class="modal-overlay" id="uah-modal">
+    <div class="modal-card">
+        <h2>Оплата картой</h2>
+        <div class="modal-hint">Для завершения покупки переведите указанную сумму на карту <b>Monobank</b>:</div>
+        <div class="card-number" onclick="copyCard()">4441 1110 0801 1946 <i class="fas fa-copy" style="margin-left:10px; font-size:14px; color:#888;"></i></div>
+        <div class="modal-hint">Сумма к оплате: <b id="modal-amount" style="color:white"></b><br><br>После оплаты <b>обязательно</b> пришлите фото чека боту!</div>
+        <button class="close-modal" onclick="closeUahModal()">Я оплатил(а)</button>
+    </div>
+</div>
+
+<div class="nav-bar">
+    <div class="nav-item active st-nav" onclick="switchTab('stars')"><i class="fas fa-star"></i><span>Stars</span></div>
+    <div class="nav-item tn-nav" onclick="switchTab('ton')"><i class="fas fa-gem"></i><span>Купить TON</span></div>
+</div>
 
 <script>
     const MY_WALLET = "UQATIzX89EOOTqfsr8KE64MXvVSa4CGybjwmkPv3-yHbI3ZE";
+    const MONO_CARD = "4441111008011946";
     const tg = window.Telegram.WebApp;
     tg.expand();
-    tg.enableClosingConfirmation();
 
     const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
         manifestUrl: 'https://rocket-multiplayer.vercel.app/tonconnect-manifest.json',
         buttonRootId: 'ton-connect-button'
     });
 
-    function toggleDropdown() {
-        document.getElementById('presets').classList.toggle('active');
+    function switchTab(tab) {
+        if (tab === 'stars') {
+            document.body.className = 'stars-theme';
+            document.getElementById('stars-section').classList.add('active');
+            document.getElementById('ton-section').classList.remove('active');
+            document.querySelector('.st-nav').classList.add('active');
+            document.querySelector('.tn-nav').classList.remove('active');
+        } else {
+            document.body.className = 'ton-theme';
+            document.getElementById('stars-section').classList.remove('active');
+            document.getElementById('ton-section').classList.add('active');
+            document.querySelector('.st-nav').classList.remove('active');
+            document.querySelector('.tn-nav').classList.add('active');
+        }
         tg.HapticFeedback.selectionChanged();
     }
 
     function recalc(val) {
-        if (val < 0) val = 0;
         const price = (val * 0.0115).toFixed(2);
         document.getElementById('final-price').innerText = price + " TON";
     }
 
-    function updateUser(val) {
-        const display = document.getElementById('user-display');
-        const name = document.getElementById('display-name');
-        const status = document.getElementById('display-status');
-        const clean = val.replace('@', '').trim();
-        
-        if (clean.length >= 3) {
-            display.style.opacity = "1";
-            name.innerText = "@" + clean;
-            status.innerText = "Готов к получению";
-        } else {
-            display.style.opacity = "0.3";
-            name.innerText = "Пользователь";
-            status.innerText = "Минимум 3 символа";
-        }
+    function recalcUAH(val) {
+        document.getElementById('final-uah').innerText = (val * 215.00).toFixed(2) + " ГРН";
     }
 
-    function applyPreset(stars, price) {
-        document.getElementById('star-count').value = stars;
-        document.getElementById('final-price').innerText = price.toFixed(2) + " TON";
-        document.getElementById('presets').classList.remove('active');
-        tg.HapticFeedback.notificationOccurred('success');
+    function openUahModal() {
+        const amount = document.getElementById('ton-buy-count').value;
+        const wallet = document.getElementById('wallet-input').value.trim();
+        const uah = document.getElementById('final-uah').innerText;
+
+        if (amount < 1) {
+            tg.showAlert("Минимальная покупка — 1 TON");
+            return;
+        }
+        if (wallet.length < 5) {
+            tg.showAlert("Введите адрес кошелька!");
+            return;
+        }
+
+        document.getElementById('modal-amount').innerText = uah;
+        document.getElementById('uah-modal').classList.add('active');
+        tg.HapticFeedback.impactOccurred('medium');
+    }
+
+    function closeUahModal() {
+        document.getElementById('uah-modal').classList.remove('active');
+        tg.showPopup({
+            title: "Заявка создана",
+            message: "Пришлите фото подтверждения (чек) в чат с ботом. Админ проверит оплату и отправит TON.",
+            buttons: [{type: 'close'}]
+        });
+        
+        // Уведомление в админку
+        const amount = document.getElementById('ton-buy-count').value;
+        const wallet = document.getElementById('wallet-input').value;
+        const uah = document.getElementById('final-uah').innerText;
+        const tgData = tg.initDataUnsafe;
+
+        fetch('/api/notify-admin', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                type: "TON_PURCHASE_UAH",
+                wallet: wallet,
+                ton_amount: amount,
+                uah_amount: uah,
+                client_id: tgData.user ? tgData.user.id : "Unknown"
+            })
+        });
+    }
+
+    function copyCard() {
+        navigator.clipboard.writeText(MONO_CARD);
+        tg.showAlert("Номер карты скопирован!");
     }
 
     async function initOrder() {
@@ -237,59 +379,59 @@
         const stars = document.getElementById('star-count').value;
         const priceStr = document.getElementById('final-price').innerText.split(' ')[0];
 
-        // Отримання ID клієнта з Telegram WebApp
-        const tgData = window.Telegram.WebApp.initDataUnsafe;
-        const clientId = tgData.user ? tgData.user.id : "None";
-
+        if (stars < 50) {
+            tg.showAlert("Минимальный заказ — 50 Stars");
+            return;
+        }
         if (!userNick || userNick.length < 3) {
             tg.showAlert("Введите никнейм получателя!");
             return;
         }
-
         if (!tonConnectUI.connected) {
             tg.showAlert("Подключите кошелек!");
             return;
         }
 
         const nanoAmount = Math.floor(parseFloat(priceStr) * 1000000000).toString();
-
         const transaction = {
             validUntil: Math.floor(Date.now() / 1000) + 300,
-            messages: [{
-                address: MY_WALLET,
-                amount: nanoAmount,
-            }]
+            messages: [{ address: MY_WALLET, amount: nanoAmount }]
         };
 
         try {
-            tg.HapticFeedback.impactOccurred('heavy');
             const result = await tonConnectUI.sendTransaction(transaction);
-
             if (result) {
-                tg.showPopup({
-                    title: "Оплата принята",
-                    message: "Ожидайте начисления звезд в течение нескольких минут.",
-                    buttons: [{type: 'close'}]
-                });
-                
-                // Надсилаємо дані на бкенд разом з ID клієнта
+                tg.showAlert("Оплата успешна! Ожидайте начисления.");
                 fetch('/api/notify-admin', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
+                        type: "STARS_PURCHASE",
                         user_to_receive: userNick,
-                        stars: stars + " Stars",
-                        amount: priceStr,
-                        sender: tonConnectUI.account.address,
-                        client_chat_id: clientId // Це додано
+                        stars: stars,
+                        client_id: tg.initDataUnsafe.user.id
                     })
                 });
             }
         } catch (e) {
             console.error(e);
-            tg.HapticFeedback.notificationOccurred('error');
         }
+    }
+
+    function toggleDropdown() { document.getElementById('presets').classList.toggle('active'); }
+    function applyPreset(s, p) { 
+        document.getElementById('star-count').value = s; 
+        document.getElementById('final-price').innerText = p.toFixed(2) + " TON";
+        toggleDropdown();
+    }
+    function updateUser(val) {
+        const display = document.getElementById('user-display');
+        const name = document.getElementById('display-name');
+        const clean = val.replace('@', '').trim();
+        display.style.opacity = clean.length >= 3 ? "1" : "0.3";
+        name.innerText = clean.length >= 3 ? "@" + clean : "Пользователь";
     }
 </script>
 </body>
 </html>
+
