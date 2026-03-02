@@ -3,6 +3,7 @@ from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
+# ТВОИ ДАННЫЕ
 BOT_TOKEN = "8250116983:AAGGgp7aJPFF0IYBfzeoHK7cwx-hi2Zhgkk"
 ADMIN_ID = 1471307057
 
@@ -17,7 +18,7 @@ def handle_all():
     data = request.json
     if not data: return jsonify({"ok": False})
 
-    # --- 1. ОБРАБОТКА СООБЩЕНИЙ ИЗ ТЕЛЕГРАМА (Webhooks) ---
+    # --- ОБРАБОТКА WEBHOOK ОТ TELEGRAM (Сообщения, /start, Фото) ---
     if "message" in data:
         msg = data["message"]
         chat_id = msg["chat"]["id"]
@@ -25,20 +26,20 @@ def handle_all():
         user_mention = f"@{username}" if username else msg.get("from", {}).get("first_name", "Клиент")
 
         if "text" in msg and msg["text"] == "/start":
-            welcome_text = "👋 Магазин SkruchStars открыт! Нажми кнопку ниже, чтобы купить Stars или TON:"
+            welcome_text = "👋 Магазин SkruchStars открыт! Нажми кнопку ниже:"
             kb = {"inline_keyboard": [[{"text": "🚀 Окрыть Магазин", "web_app": {"url": "https://rocket-multiplayer.vercel.app"}}]]}
             send_tg("sendMessage", {"chat_id": chat_id, "text": welcome_text, "reply_markup": kb})
             return jsonify({"ok": True})
 
-        # Фильтр отзывов / чеков оплаты
+        # Пересылка чеков и отзывов админу
         if chat_id != ADMIN_ID:
             has_photo = "photo" in msg
-            is_review = "text" in msg and len(msg["text"]) > 5
+            is_text = "text" in msg
             
-            if has_photo or is_review:
+            if has_photo or is_text:
                 send_tg("sendMessage", {
                     "chat_id": ADMIN_ID, 
-                    "text": f"📣 **Новое сообщение/отзыв от:** {user_mention} (ID: `{chat_id}`)",
+                    "text": f"📣 **Новое сообщение от:** {user_mention} (ID: `{chat_id}`)",
                     "parse_mode": "Markdown"
                 })
                 send_tg("forwardMessage", {
@@ -48,58 +49,77 @@ def handle_all():
                 })
             return jsonify({"ok": True})
 
-    # --- 2. ОБРАБОТКА ЗАКАЗОВ ИЗ WEB APP (JSON POST) ---
+    # --- ОБРАБОТКА ЗАКАЗОВ ИЗ WEB APP ---
     
-    # А) Покупка Stars (через TON)
-    if data.get("type") == "STARS_PURCHASE" or "user_to_receive" in data:
+    # А) Заказ Stars
+    if data.get("type") == "STARS_PURCHASE":
         user = data.get('user_to_receive', 'unknown')
-        stars = data.get('stars', 'Stars')
-        client_id = data.get('client_id') or data.get('client_chat_id', 'None')
+        stars = data.get('stars', '0')
+        client_id = data.get('client_id', 'None')
 
-        admin_text = f"⭐️ **НОВЫЙ ЗАКАЗ STARS!**\n\n👤 Получатель: @{user.replace('@','')}\n💎 Количество: {stars} шт.\n💳 Оплата: TON (проверь кошелек)"
-        kb = {"inline_keyboard": [[{"text": "✅ ОТПРАВИЛ", "callback_data": f"done_{client_id}"}]]}
+        admin_text = f"⭐️ **ЗАКАЗ STARS (TON)**\n\n👤 Получатель: @{user}\n💎 Количество: {stars} шт.\nID: `{client_id}`"
+        kb = {"inline_keyboard": [
+            [{"text": "✅ ВЫПОЛНЕНО", "callback_data": f"done_{client_id}"}],
+            [{"text": "❌ ОТКЛОНИТЬ", "callback_data": f"cancel_{client_id}"}]
+        ]}
         send_tg("sendMessage", {"chat_id": ADMIN_ID, "text": admin_text, "parse_mode": "Markdown", "reply_markup": kb})
         return jsonify({"ok": True})
 
-    # Б) Покупка TON (за ГРН через карту)
+    # Б) Заказ TON за ГРН
     if data.get("type") == "TON_PURCHASE_UAH":
-        wallet = data.get('wallet', 'Не указан')
+        wallet = data.get('wallet', 'None')
         ton_amount = data.get('ton_amount', '0')
         uah_amount = data.get('uah_amount', '0')
         client_id = data.get('client_id', 'None')
 
-        admin_text = (f"💳 **ЗАЯВКА: КУПИТЬ TON ЗА ГРН**\n\n"
-                      f"💰 Сумма к получению: `{uah_amount}`\n"
-                      f"💎 Отправить клиенту: `{ton_amount} TON`\n"
-                      f"🏦 Кошелек клиента: `{wallet}`\n"
-                      f"👤 ID клиента: `{client_id}`\n\n"
-                      f"⚠️ Жди фото чека от клиента!")
+        admin_text = (f"💳 **ЗАЯВКА TON (ГРН)**\n\n"
+                      f"💰 К оплате: `{uah_amount}`\n"
+                      f"💎 К отправке: `{ton_amount} TON`\n"
+                      f"🏦 Кошелек: `{wallet}`\n"
+                      f"👤 ID: `{client_id}`")
         
-        kb = {"inline_keyboard": [[{"text": "✅ TON ОТПРАВЛЕН", "callback_data": f"tondone_{client_id}"}]]}
+        kb = {"inline_keyboard": [
+            [{"text": "✅ ОПЛАЧЕНО", "callback_data": f"tondone_{client_id}"}],
+            [{"text": "❌ ОТКЛОНИТЬ", "callback_data": f"cancel_{client_id}"}]
+        ]}
         send_tg("sendMessage", {"chat_id": ADMIN_ID, "text": admin_text, "parse_mode": "Markdown", "reply_markup": kb})
+        
+        # Сразу просим клиента скинуть квитанцию
+        send_tg("sendMessage", {
+            "chat_id": int(client_id), 
+            "text": "⚠️ **Заявка принята!**\n\nПожалуйста, отправьте **фото квитанции** об оплате прямо сюда в чат. Мы ждем подтверждения!",
+            "parse_mode": "Markdown"
+        })
         return jsonify({"ok": True})
 
-    # --- 3. ОБРАБОТКА КНОПОК "ГОТОВО" ---
+    # --- ОБРАБОТКА CALLBACK КНОПОК ---
     if "callback_query" in data:
         cb = data["callback_query"]
         cb_data = cb["data"]
         
-        # Для Звезд
-        if cb_data.startswith("done_"):
+        # Кнопка ОТКЛОНИТЬ
+        if cb_data.startswith("cancel_"):
+            target_id = cb_data.replace("cancel_", "")
+            send_tg("sendMessage", {"chat_id": int(target_id), "text": "❌ **Ваша заявка отклонена.**", "parse_mode": "Markdown"})
+            send_tg("editMessageText", {"chat_id": ADMIN_ID, "message_id": cb["message"]["message_id"], "text": cb["message"]["text"] + "\n\n🔴 **ОТКЛОНЕНО**"})
+
+        # Кнопка ПОДТВЕРДИТЬ STARS
+        elif cb_data.startswith("done_"):
             target_id = cb_data.replace("done_", "")
-            msg_to_client = "✅ **Звёзды зачислены!**\n\nБудем благодарны за отзыв! Пришлите фото и текст **одним сообщением** 👇"
-            send_tg("sendMessage", {"chat_id": int(target_id), "text": msg_to_client, "parse_mode": "Markdown"})
-            send_tg("answerCallbackQuery", {"callback_query_id": cb["id"], "text": "Клиент уведомлен!"})
-            
-        # Для ТОН
-        if cb_data.startswith("tondone_"):
+            send_tg("sendMessage", {"chat_id": int(target_id), "text": "✅ **Звезды зачислены!**", "parse_mode": "Markdown"})
+            send_tg("editMessageText", {"chat_id": ADMIN_ID, "message_id": cb["message"]["message_id"], "text": cb["message"]["text"] + "\n\n🟢 **ВЫПОЛНЕНО**"})
+
+        # Кнопка ПОДТВЕРДИТЬ TON
+        elif cb_data.startswith("tondone_"):
             target_id = cb_data.replace("tondone_", "")
-            msg_to_client = "💎 **TON зачислен на ваш кошелек!**\n\nСпасибо за покупку! Оставьте отзыв, если всё понравилось."
-            send_tg("sendMessage", {"chat_id": int(target_id), "text": msg_to_client, "parse_mode": "Markdown"})
-            send_tg("answerCallbackQuery", {"callback_query_id": cb["id"], "text": "Клиент уведомлен!"})
+            send_tg("sendMessage", {"chat_id": int(target_id), "text": "💎 **TON зачислен!** Проверьте кошелек.", "parse_mode": "Markdown"})
+            send_tg("editMessageText", {"chat_id": ADMIN_ID, "message_id": cb["message"]["message_id"], "text": cb["message"]["text"] + "\n\n🟢 **ТОН ОТПРАВЛЕН**"})
+
+        send_tg("answerCallbackQuery", {"callback_query_id": cb["id"]})
 
     return jsonify({"ok": True})
 
 if __name__ == '__main__':
     app.run(port=5000)
+            
         
