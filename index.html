@@ -260,13 +260,13 @@
 
     <div class="label">Количество (мин. 1 TON)</div>
     <div class="glass-panel stars-input-row">
-        <input type="number" id="ton-buy-count" value="10" oninput="recalcUAH(this.value)">
+        <input type="number" id="ton-buy-count" value="1" oninput="recalcUAH(this.value)">
         <i class="fas fa-gem" style="color:var(--accent-blue)"></i>
     </div>
 
     <div class="price-summary">
         <span>К ОПЛАТЕ</span>
-        <b id="final-uah">2150.00 ГРН</b>
+        <b id="final-uah">62.00 ГРН</b>
     </div>
     <button class="main-btn" onclick="openUahModal()">Оплатить картой</button>
 </div>
@@ -274,9 +274,9 @@
 <div class="modal-overlay" id="uah-modal">
     <div class="modal-card">
         <h2>Оплата картой</h2>
-        <div class="modal-hint">Для завершения покупки переведите указанную сумму на карту <b>Monobank</b>:</div>
+        <div class="modal-hint">Переведите сумму на карту <b>Monobank</b>:</div>
         <div class="card-number" onclick="copyCard()">4441 1110 0801 1946 <i class="fas fa-copy" style="margin-left:10px; font-size:14px; color:#888;"></i></div>
-        <div class="modal-hint">Сумма к оплате: <b id="modal-amount" style="color:white"></b><br><br>После оплаты <b>обязательно</b> пришлите фото чека боту!</div>
+        <div class="modal-hint">К оплате: <b id="modal-amount" style="color:white"></b><br><br>После оплаты <b>ОБЯЗАТЕЛЬНО</b> пришлите чек боту!</div>
         <button class="close-modal" onclick="closeUahModal()">Я оплатил(а)</button>
     </div>
 </div>
@@ -320,7 +320,8 @@
     }
 
     function recalcUAH(val) {
-        document.getElementById('final-uah').innerText = (val * 215.00).toFixed(2) + " ГРН";
+        // Установлен курс 62 ГРН за 1 TON
+        document.getElementById('final-uah').innerText = (val * 62.00).toFixed(2) + " ГРН";
     }
 
     function openUahModal() {
@@ -344,13 +345,13 @@
 
     function closeUahModal() {
         document.getElementById('uah-modal').classList.remove('active');
+        
         tg.showPopup({
-            title: "Заявка создана",
-            message: "Пришлите фото подтверждения (чек) в чат с ботом. Админ проверит оплату и отправит TON.",
-            buttons: [{type: 'close'}]
+            title: "Ожидаем оплату",
+            message: "Пришлите фото подтверждения (чек) прямо в этот чат. Бот ожидает квитанцию!",
+            buttons: [{type: 'ok'}]
         });
         
-        // Уведомление в админку
         const amount = document.getElementById('ton-buy-count').value;
         const wallet = document.getElementById('wallet-input').value;
         const uah = document.getElementById('final-uah').innerText;
@@ -401,7 +402,7 @@
         try {
             const result = await tonConnectUI.sendTransaction(transaction);
             if (result) {
-                tg.showAlert("Оплата успешна! Ожидайте начисления.");
+                tg.showAlert("Оплата успешна!");
                 fetch('/api/notify-admin', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -413,9 +414,7 @@
                     })
                 });
             }
-        } catch (e) {
-            console.error(e);
-        }
+        } catch (e) { console.error(e); }
     }
 
     function toggleDropdown() { document.getElementById('presets').classList.toggle('active'); }
@@ -434,4 +433,5 @@
 </script>
 </body>
 </html>
+
 
